@@ -1,4 +1,4 @@
-// Importar o arquivo compartilhado
+// Importar a MESMA lista compartilhada
 const bannedList = require('./bannedIPs.js');
 
 export default async function handler(req, res) {
@@ -12,12 +12,13 @@ export default async function handler(req, res) {
     }
 
     const authToken = req.headers.authorization;
-    const ADMIN_TOKEN = 'pornhub'; // MUDE ISSO!
+    const ADMIN_TOKEN = 'pornhub'; // MUDE ISSO
 
     // GET - Listar todos os IPs banidos
     if (req.method === 'GET') {
+        const bans = bannedList.getBans();
         return res.status(200).json({ 
-            ips: bannedList.getBans(),
+            ips: bans,
             total: bannedList.getTotalBans()
         });
     }
