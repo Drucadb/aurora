@@ -1,38 +1,47 @@
 // api/bannedIPs.js
 let bannedIPs = [];
 
+// Função para limpar IP
+function cleanIP(ip) {
+    return ip.replace(/\\/g, '').trim();
+}
+
 module.exports = {
     addBan(ip, motivo = 'Spam detectado') {
-        if (!bannedIPs.some(item => item.ip === ip)) {
+        const clean = cleanIP(ip);
+        if (!bannedIPs.some(item => item.ip === clean)) {
             bannedIPs.push({ 
-                ip, 
+                ip: clean, 
                 motivo, 
                 data: new Date().toISOString() 
             });
-            console.log(`✅ IP ${ip} banido com motivo: ${motivo}`);
+            console.log(`✅ IP ${clean} banido com motivo: ${motivo}`);
             return true;
         }
-        console.log(`⚠️ IP ${ip} já estava banido`);
+        console.log(`⚠️ IP ${clean} já estava banido`);
         return false;
     },
     
     removeBan(ip) {
+        const clean = cleanIP(ip);
         const initialLength = bannedIPs.length;
-        bannedIPs = bannedIPs.filter(item => item.ip !== ip);
+        bannedIPs = bannedIPs.filter(item => item.ip !== clean);
         if (bannedIPs.length !== initialLength) {
-            console.log(`✅ IP ${ip} desbanido`);
+            console.log(`✅ IP ${clean} desbanido`);
             return true;
         }
-        console.log(`⚠️ IP ${ip} não encontrado`);
+        console.log(`⚠️ IP ${clean} não encontrado`);
         return false;
     },
     
     isBanned(ip) {
-        return bannedIPs.some(item => item.ip === ip);
+        const clean = cleanIP(ip);
+        return bannedIPs.some(item => item.ip === clean);
     },
     
     getBanReason(ip) {
-        const ban = bannedIPs.find(item => item.ip === ip);
+        const clean = cleanIP(ip);
+        const ban = bannedIPs.find(item => item.ip === clean);
         return ban ? ban.motivo : null;
     },
     
