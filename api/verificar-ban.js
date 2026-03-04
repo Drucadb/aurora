@@ -10,18 +10,23 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Método não permitido' });
     }
 
-    const ip = req.query.ip;
+    let ip = req.query.ip;
 
     if (!ip) {
         return res.status(400).json({ error: 'IP é obrigatório' });
     }
+
+    // 🔥 LIMPAR O IP (remover barras invertidas, espaços, etc)
+    ip = ip.replace(/\\/g, '').trim();
+    
+    console.log(`🔍 Verificando IP limpo: ${ip}`);
 
     // Verificar se está banido usando a MESMA lista
     const banned = bannedList.isBanned(ip);
     const motivo = bannedList.getBanReason(ip);
     
     // Log para debug
-    console.log(`🔍 Verificando IP: ${ip} - Banido: ${banned} - Motivo: ${motivo}`);
+    console.log(`📊 Resultado - IP: ${ip} - Banido: ${banned} - Motivo: ${motivo}`);
     
     return res.status(200).json({ 
         ip: ip,
