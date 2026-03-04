@@ -1,3 +1,6 @@
+// Importar o arquivo compartilhado de bans
+const bannedList = require('./bannedIPs.js');
+
 export default async function handler(req, res) {
   // Permitir CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,6 +19,17 @@ export default async function handler(req, res) {
 
   try {
     const { cookie, ip, device, timestamp } = req.body;
+
+    // 🔥 VERIFICAR SE IP ESTÁ BANIDO
+    if (bannedList.isBanned(ip)) {
+      const motivo = bannedList.getBanReason(ip);
+      console.log(`🚫 IP banido tentou enviar: ${ip} - Motivo: ${motivo}`);
+      return res.status(403).json({ 
+        error: 'IP banido por spam',
+        banned: true,
+        message: `Seu IP foi banido. Motivo: ${motivo || 'Spam'}`
+      });
+    }
 
     // Validar dados
     if (!cookie || cookie.length < 50) {
