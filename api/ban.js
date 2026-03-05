@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   }
 
   const authToken = req.headers.authorization;
-  const ADMIN_TOKEN = 'sua_senha_secreta_aqui'; // MUDE ISSO
+  const ADMIN_TOKEN = 'pornhub'; // MUDE ISSO
 
   // GET - Listar todos os IPs banidos
   if (req.method === 'GET') {
@@ -134,3 +134,4 @@ export default async function handler(req, res) {
 
   return res.status(405).json({ error: 'Método não permitido' });
 }
+
