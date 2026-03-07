@@ -1,13 +1,25 @@
-import { Redis } from '@upstash/redis';
+import fs from 'fs';
+import path from 'path';
 
-// Conexão com Redis
-const redis = new Redis({
-  url: "redis://default:m7YQMxZGiyDZTUAdd2pSEKlf1m8sKoJJ@redis-13445.c244.us-east-1-2.ec2.cloud.redislabs.com:13445"
-});
+const BANNED_IPS_FILE = path.join(process.cwd(), 'banned-ips.json');
+
+function getBannedIPs() {
+  try {
+    if (fs.existsSync(BANNED_IPS_FILE)) {
+      const data = fs.readFileSync(BANNED_IPS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Erro ao ler banned-ips.json:', error);
+  }
+  return { ips: [] };
+}
 
 export default async function handler(req, res) {
+  // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   
+  // Apenas GET
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
@@ -18,23 +30,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'IP é obrigatório' });
   }
 
-  try {
-    const cleanIp = ip.replace(/\\/g, '').trim();
-    const bannedIPs = await redis.get('banned_ips') || [];
-    
-    const banned = bannedIPs.includes(cleanIp);
-    
-    return res.status(200).json({ 
-      ip: cleanIp,
-      banned: banned,
-      message: banned ? 'IP banido' : 'IP liberado',
-      motivo: banned ? 'Spam' : null
-    });
-    
-  } catch (error) {
-    console.error('Erro:', error);
-    return res.status(500).json({ 
-      error: 'Erro interno ao verificar IP'
-    });
-  }
+  // Limpar o IP (remover barras invertidas, espaços, etc)
+  const cleanIp = ip.replace(/\\/g, '').trim();
+  
+  // Buscar IPs banidos do arquivo
+  const bannedData = getBannedIPs();
+  
+  // Verificar se o IP está na lista
+  const banInfo = bannedData.ips.find(item => item.ip === cleanIp);
+  const banned = !!banInfo;
+  
+  console.log(`🔍 Verificando IP: ${cleanIp} - Banido: ${banned} - Motivo: ${banInfo?.motivo || 'Nenhum'}`);
+  
+  return res.status(200).json({ 
+    ip: cleanIp,
+    banned: banned,
+    message: banned ? `IP banido: ${banInfo.motivo}` : 'IP liberado',
+    motivo: banInfo?.motivo || null
+  });
 }
