@@ -120,8 +120,14 @@
       "motivo": "rebolou errado",
       "data": "2026-03-05T02:30:00.000Z"
     },
+    {
+      "ip": "148.227.83.237",
+      "motivo": "spamer banned 14day",
+      "data": "2026-03-05T02:30:00.000Z"
+    },
   ]
 }
+
 
 
 
