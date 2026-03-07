@@ -1,32 +1,38 @@
-import fs from 'fs';
-import path from 'path';
-
-const BANNED_IPS_FILE = path.join(process.cwd(), 'banned-ips.json');
-
-function getBannedIPs() {
-  try {
-    if (fs.existsSync(BANNED_IPS_FILE)) {
-      const data = fs.readFileSync(BANNED_IPS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Erro ao ler banned-ips.json:', error);
-  }
-  return { ips: [] };
-}
-
-function saveBannedIPs(data) {
-  try {
-    fs.writeFileSync(BANNED_IPS_FILE, JSON.stringify(data, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Erro ao salvar banned-ips.json:', error);
-    return false;
-  }
-}
+// Lista de IPs banidos (em memória)
+let bannedIPs = [
+  "189.126.42.11",
+  "177.37.251.156",
+  "167.250.155.119",
+  "138.118.187.25",
+  "192.145.212.153",
+  "177.32.34.207",
+  "191.246.251.165",
+  "177.26.253.73",
+  "45.70.101.195",
+  "177.91.134.145",
+  "170.81.211.216",
+  "170.231.141.183",
+  "206.0.10.254",
+  "170.80.70.169",
+  "187.86.8.34",
+  "104.28.162.132",
+  "177.37.186.137",
+  "45.182.243.87",
+  "186.212.212.53",
+  "167.250.60.229",
+  "177.190.191.59",
+  "190.8.23.180",
+  "168.227.174.200",
+  "170.83.16.119",
+  "148.227.83.237",
+  "45.185.155.22",
+  "191.242.109.8",
+  "177.190.210.197",
+  "177.5.106.38",
+  "186.212.212.53"
+];
 
 export default async function handler(req, res) {
-  // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -36,17 +42,24 @@ export default async function handler(req, res) {
   }
 
   const authToken = req.headers.authorization;
-  const ADMIN_TOKEN = 'pornhub'; // MUDE ISSO
+  const ADMIN_TOKEN = 'pornhub'; // COLOQUE SUA SENHA
 
   // GET - Listar todos os IPs banidos
   if (req.method === 'GET') {
-    const bannedData = getBannedIPs();
-    return res.status(200).json(bannedData);
+    const ipsList = bannedIPs.map(ip => ({
+      ip: ip,
+      motivo: "Spam",
+      data: new Date().toISOString()
+    }));
+    
+    return res.status(200).json({ 
+      ips: ipsList,
+      total: bannedIPs.length
+    });
   }
 
-  // POST - Banir um IP
+  // POST - Banir um IP (requer token)
   if (req.method === 'POST') {
-    // Verificar token
     if (authToken !== `Bearer ${ADMIN_TOKEN}`) {
       return res.status(401).json({ error: 'Não autorizado' });
     }
@@ -59,41 +72,26 @@ export default async function handler(req, res) {
       }
 
       const cleanIp = ip.replace(/\\/g, '').trim();
-      const bannedData = getBannedIPs();
       
-      // Verificar se já existe
-      if (bannedData.ips.some(item => item.ip === cleanIp)) {
+      if (bannedIPs.includes(cleanIp)) {
         return res.status(400).json({ error: 'IP já está banido' });
       }
 
-      // Adicionar ban
-      bannedData.ips.push({
-        ip: cleanIp,
-        motivo: motivo || 'Spam detectado',
-        data: new Date().toISOString()
-      });
+      bannedIPs.push(cleanIp);
 
-      if (saveBannedIPs(bannedData)) {
-        return res.status(200).json({ 
-          success: true, 
-          message: 'IP banido com sucesso',
-          ip: cleanIp,
-          motivo: motivo || 'Spam detectado',
-          total: bannedData.ips.length
-        });
-      } else {
-        return res.status(500).json({ error: 'Erro ao salvar' });
-      }
+      return res.status(200).json({ 
+        success: true, 
+        message: 'IP banido com sucesso',
+        total: bannedIPs.length
+      });
       
     } catch (error) {
-      console.error('Erro:', error);
       return res.status(500).json({ error: 'Erro interno' });
     }
   }
 
-  // DELETE - Desbanir um IP
+  // DELETE - Desbanir um IP (requer token)
   if (req.method === 'DELETE') {
-    // Verificar token
     if (authToken !== `Bearer ${ADMIN_TOKEN}`) {
       return res.status(401).json({ error: 'Não autorizado' });
     }
@@ -106,32 +104,24 @@ export default async function handler(req, res) {
       }
 
       const cleanIp = ip.replace(/\\/g, '').trim();
-      const bannedData = getBannedIPs();
+      const index = bannedIPs.indexOf(cleanIp);
       
-      const initialLength = bannedData.ips.length;
-      bannedData.ips = bannedData.ips.filter(item => item.ip !== cleanIp);
-
-      if (bannedData.ips.length === initialLength) {
+      if (index === -1) {
         return res.status(404).json({ error: 'IP não encontrado' });
       }
 
-      if (saveBannedIPs(bannedData)) {
-        return res.status(200).json({ 
-          success: true, 
-          message: 'IP desbanido com sucesso',
-          ip: cleanIp,
-          total: bannedData.ips.length
-        });
-      } else {
-        return res.status(500).json({ error: 'Erro ao salvar' });
-      }
+      bannedIPs.splice(index, 1);
+
+      return res.status(200).json({ 
+        success: true, 
+        message: 'IP desbanido com sucesso',
+        total: bannedIPs.length
+      });
       
     } catch (error) {
-      console.error('Erro:', error);
       return res.status(500).json({ error: 'Erro interno' });
     }
   }
 
   return res.status(405).json({ error: 'Método não permitido' });
 }
-
