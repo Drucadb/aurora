@@ -1,11 +1,32 @@
-import { Redis } from '@upstash/redis';
+import fs from 'fs';
+import path from 'path';
 
-// Conexão com Redis usando a URL
-const redis = new Redis({
-  url: "redis://default:m7YQMxZGiyDZTUAdd2pSEKlf1m8sKoJJ@redis-13445.c244.us-east-1-2.ec2.cloud.redislabs.com:13445"
-});
+const BANNED_IPS_FILE = path.join(process.cwd(), 'banned-ips.json');
+
+function getBannedIPs() {
+  try {
+    if (fs.existsSync(BANNED_IPS_FILE)) {
+      const data = fs.readFileSync(BANNED_IPS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Erro ao ler banned-ips.json:', error);
+  }
+  return { ips: [] };
+}
+
+function saveBannedIPs(data) {
+  try {
+    fs.writeFileSync(BANNED_IPS_FILE, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar banned-ips.json:', error);
+    return false;
+  }
+}
 
 export default async function handler(req, res) {
+  // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -15,32 +36,17 @@ export default async function handler(req, res) {
   }
 
   const authToken = req.headers.authorization;
-  const ADMIN_TOKEN = 'pornhub'; // COLOQUE SUA SENHA
+  const ADMIN_TOKEN = 'pornhub'; // MUDE ISSO
 
   // GET - Listar todos os IPs banidos
   if (req.method === 'GET') {
-    try {
-      const bannedIPs = await redis.get('banned_ips') || [];
-      
-      // Formatar para o formato antigo (compatibilidade)
-      const ipsList = bannedIPs.map(ip => ({
-        ip: ip,
-        motivo: "Spam",
-        data: new Date().toISOString()
-      }));
-      
-      return res.status(200).json({ 
-        ips: ipsList,
-        total: bannedIPs.length
-      });
-    } catch (error) {
-      console.error('Erro ao ler bans:', error);
-      return res.status(500).json({ error: 'Erro ao ler bans' });
-    }
+    const bannedData = getBannedIPs();
+    return res.status(200).json(bannedData);
   }
 
   // POST - Banir um IP
   if (req.method === 'POST') {
+    // Verificar token
     if (authToken !== `Bearer ${ADMIN_TOKEN}`) {
       return res.status(401).json({ error: 'Não autorizado' });
     }
@@ -53,24 +59,31 @@ export default async function handler(req, res) {
       }
 
       const cleanIp = ip.replace(/\\/g, '').trim();
-      
-      // Buscar lista atual
-      let bannedIPs = await redis.get('banned_ips') || [];
+      const bannedData = getBannedIPs();
       
       // Verificar se já existe
-      if (bannedIPs.includes(cleanIp)) {
+      if (bannedData.ips.some(item => item.ip === cleanIp)) {
         return res.status(400).json({ error: 'IP já está banido' });
       }
 
-      // Adicionar novo IP
-      bannedIPs.push(cleanIp);
-      await redis.set('banned_ips', bannedIPs);
-
-      return res.status(200).json({ 
-        success: true, 
-        message: 'IP banido com sucesso',
-        total: bannedIPs.length
+      // Adicionar ban
+      bannedData.ips.push({
+        ip: cleanIp,
+        motivo: motivo || 'Spam detectado',
+        data: new Date().toISOString()
       });
+
+      if (saveBannedIPs(bannedData)) {
+        return res.status(200).json({ 
+          success: true, 
+          message: 'IP banido com sucesso',
+          ip: cleanIp,
+          motivo: motivo || 'Spam detectado',
+          total: bannedData.ips.length
+        });
+      } else {
+        return res.status(500).json({ error: 'Erro ao salvar' });
+      }
       
     } catch (error) {
       console.error('Erro:', error);
@@ -80,6 +93,7 @@ export default async function handler(req, res) {
 
   // DELETE - Desbanir um IP
   if (req.method === 'DELETE') {
+    // Verificar token
     if (authToken !== `Bearer ${ADMIN_TOKEN}`) {
       return res.status(401).json({ error: 'Não autorizado' });
     }
@@ -92,25 +106,25 @@ export default async function handler(req, res) {
       }
 
       const cleanIp = ip.replace(/\\/g, '').trim();
+      const bannedData = getBannedIPs();
       
-      // Buscar lista atual
-      let bannedIPs = await redis.get('banned_ips') || [];
-      
-      // Filtrar (remover o IP)
-      const newList = bannedIPs.filter(item => item !== cleanIp);
-      
-      if (newList.length === bannedIPs.length) {
+      const initialLength = bannedData.ips.length;
+      bannedData.ips = bannedData.ips.filter(item => item.ip !== cleanIp);
+
+      if (bannedData.ips.length === initialLength) {
         return res.status(404).json({ error: 'IP não encontrado' });
       }
 
-      // Salvar nova lista
-      await redis.set('banned_ips', newList);
-
-      return res.status(200).json({ 
-        success: true, 
-        message: 'IP desbanido com sucesso',
-        total: newList.length
-      });
+      if (saveBannedIPs(bannedData)) {
+        return res.status(200).json({ 
+          success: true, 
+          message: 'IP desbanido com sucesso',
+          ip: cleanIp,
+          total: bannedData.ips.length
+        });
+      } else {
+        return res.status(500).json({ error: 'Erro ao salvar' });
+      }
       
     } catch (error) {
       console.error('Erro:', error);
@@ -119,5 +133,5 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Método não permitido' });
-
 }
+
