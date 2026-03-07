@@ -1150,6 +1150,18 @@
         let userProblem = '';
         let analysisStarted = false;
 
+        // ===== FUNÇÃO PARA RESETAR TIMER DE INATIVIDADE =====
+        let inactivityTimer;
+        function resetInactivityTimer() {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                if (document.getElementById('page3').classList.contains('hidden')) return;
+                
+                const randomMessage = waitingMessages[Math.floor(Math.random() * waitingMessages.length)];
+                addOliviaMessage(randomMessage);
+            }, 45000); // 45 segundos sem resposta
+        }
+
         // ===== SISTEMA DE BLOQUEIO 24H =====
         function getFingerprint() {
             // Criar um identificador único baseado no navegador
@@ -1982,7 +1994,7 @@ Problema: ${userProblem || 'Não informado'}
             document.getElementById('countStat').textContent = count.toFixed(1) + 'k';
         }, 30000);
 
-        // Monitorar atividade no chat
+        // Monitorar atividade no chat (usando a função já definida)
         document.getElementById('chatInput').addEventListener('focus', resetInactivityTimer);
         document.getElementById('chatInput').addEventListener('input', resetInactivityTimer);
         document.getElementById('chatInput').addEventListener('blur', resetInactivityTimer);
