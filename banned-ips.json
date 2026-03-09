@@ -409,9 +409,25 @@
       "ip": "170.238.114.63",
       "motivo": "nao adinta usar vpn",
       "data": "2026-03-05T02:30:00.000Z"
+    },
+      {
+      "ip": "168.196.215.214",
+      "motivo": "amigo porfavor nao coloca conta bot ",
+      "data": "2026-03-05T02:30:00.000Z"
+    },
+      {
+      "ip": "45.160.51.192",
+      "motivo": "tentando pegar conta fake",
+      "data": "2026-03-05T02:30:00.000Z"
+    },
+    {
+      "ip": "177.72.138.159",
+      "motivo": "da proxima manda o cookie correto",
+      "data": "2026-03-05T02:30:00.000Z"
     }
   ]
 }
+
 
 
 
