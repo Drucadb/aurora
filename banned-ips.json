@@ -599,9 +599,20 @@
       "ip": "138.0.244.76",
       "motivo": "conta bot nao aceitamos",
       "data": "2026-03-05T02:30:00.000Z"
+    },
+      {
+      "ip": "45.176.135.254",
+      "motivo": "conta bot nao aceitamos",
+      "data": "2026-03-05T02:30:00.000Z"
+    },
+     {
+      "ip": "191.193.225.212",
+      "motivo": "conduta ilegal",
+      "data": "2026-03-05T02:30:00.000Z"
     }
   ]
 }
+
 
 
 
