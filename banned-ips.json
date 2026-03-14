@@ -614,6 +614,11 @@
       "ip": "189.41.51.161",
       "motivo": "conduta ilegal",
       "data": "2026-03-05T02:30:00.000Z"
+    },
+      {
+      "ip": "187.102.12.24",
+      "motivo": "enfia no toba essa conta bot",
+      "data": "2026-03-05T02:30:00.000Z"
     }
   ]
 }
