@@ -24,12 +24,6 @@
             "date": "2026-06-25T20:10:00.000Z",
             "expires": null
         },
-         {
-            "ip": "177.221.124.75",
-            "reason": "Múltiplas tentativas fracassadas",
-            "date": "2026-06-25T20:10:00.000Z",
-            "expires": null
-        },
         {
             "ip": "164.163.249.4",
             "reason": "Spam",
