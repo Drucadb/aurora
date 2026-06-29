@@ -41,6 +41,12 @@
             "reason": "Spam",
             "date": "2026-06-28T23:58:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "179.125.244.85",
+            "reason": "Conta com 0 dias de criada",
+            "date": "2026-06-29T15:20:00.000Z",
+            "expires": null
         }
     ]
 }
