@@ -71,6 +71,12 @@
             "reason": "Spam",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+          {
+            "ip": "187.84.181.121",
+            "reason": "TOMAR NO SEU CU ARROBADO",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
