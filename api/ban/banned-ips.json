@@ -59,6 +59,12 @@
             "reason": "Spam",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "177.200.62.156",
+            "reason": "Spam",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
