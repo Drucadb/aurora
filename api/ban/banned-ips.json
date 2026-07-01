@@ -89,6 +89,12 @@
             "reason": "spam",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "201.8.54.98",
+            "reason": "banido/a permanetemente",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
