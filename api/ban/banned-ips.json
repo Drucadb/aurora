@@ -107,6 +107,12 @@
             "reason": "motivo falta de estrupo",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "191.53.166.30",
+            "reason": "contas bots nao sao permitidos",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
