@@ -101,6 +101,12 @@
             "reason": "banido/a permanetemente",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "138.118.255.123",
+            "reason": "motivo falta de estrupo",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
