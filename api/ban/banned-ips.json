@@ -127,7 +127,13 @@
             "expires": null
         },
         {
-            "ip": " 177.200.51.142",
+            "ip": "177.200.51.142",
+            "reason": "banido permanetemente",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
+        },
+        {
+            "ip": "186.195.239.202",
             "reason": "spam",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
