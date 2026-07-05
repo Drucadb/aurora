@@ -167,6 +167,12 @@
             "reason": "doente do kry mandado script carente fudido",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "45.5.248.249",
+            "reason": "conta criada recetemente",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
