@@ -245,6 +245,12 @@
             "reason": "cookie invalido banido por 40dias",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "201.20.89.214",
+            "reason": "anti macaco e chipaze",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
