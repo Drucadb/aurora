@@ -251,6 +251,12 @@
             "reason": "anti macaco e chipaze",
             "date": "2026-06-29T18:32:00.000Z",
             "expires": null
+        },
+        {
+            "ip": "186.194.23.188",
+            "reason": "anti macaco e chipaze",
+            "date": "2026-06-29T18:32:00.000Z",
+            "expires": null
         }
     ]
 }
