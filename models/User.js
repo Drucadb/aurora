@@ -20,6 +20,11 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Senha é obrigatória'],
     minlength: [6, 'Senha deve ter pelo menos 6 caracteres'],
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
   recoveryAttempts: {
     type: Number,
     default: 0,
@@ -49,7 +54,6 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
-// Atualizar updatedAt antes de salvar
 UserSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
