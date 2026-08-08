@@ -1,14 +1,8 @@
 // ============================================================
-// API DE BANIMENTO COM UPSTASH REDIS (Vercel KV)
+// API DE BANIMENTO COM VERCEL KV
 // ============================================================
 
-import { Redis } from '@upstash/redis';
-
-// ============================================================
-// CONECTAR AO REDIS
-// ============================================================
-
-const redis = Redis.fromEnv();
+import { kv } from '@vercel/kv';
 
 // ============================================================
 // CONSTANTES
@@ -18,7 +12,7 @@ const DEFAULT_GIF = 'https://media.tenor.com/2BpR9fW5HWQAAAAC/roblox-ban.gif';
 
 const CONFIG = {
     maxBansPerIP: 3,
-    autoUnbanAfter: 24, // horas
+    autoUnbanAfter: 24,
     rateLimit: {
         maxRequests: 10,
         windowMs: 60000
@@ -26,7 +20,47 @@ const CONFIG = {
 };
 
 // ============================================================
-// RATE LIMIT (em memória)
+// FUNÇÕES DE ACESSO AO KV
+// ============================================================
+
+async function getBannedIPs() {
+    try {
+        const data = await kv.get('banned_ips');
+        
+        if (!data) {
+            const defaultData = { 
+                banned: [], 
+                history: [], 
+                metadata: { 
+                    totalBans: 0, 
+                    activeBans: 0, 
+                    expiredBans: 0, 
+                    permanentBans: 0 
+                } 
+            };
+            await kv.set('banned_ips', JSON.stringify(defaultData));
+            return defaultData;
+        }
+        
+        return typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (error) {
+        console.error('❌ Erro no KV:', error);
+        return { banned: [], history: [], metadata: { totalBans: 0, activeBans: 0, expiredBans: 0, permanentBans: 0 } };
+    }
+}
+
+async function saveBannedIPs(data) {
+    try {
+        await kv.set('banned_ips', JSON.stringify(data));
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao salvar no KV:', error);
+        return false;
+    }
+}
+
+// ============================================================
+// RATE LIMIT
 // ============================================================
 
 const rateLimitStore = new Map();
@@ -54,50 +88,6 @@ function checkRateLimit(ip) {
     }
     
     return true;
-}
-
-// ============================================================
-// FUNÇÕES DE ACESSO AO REDIS
-// ============================================================
-
-async function getBannedIPs() {
-    try {
-        const data = await redis.get('banned_ips');
-        
-        if (!data) {
-            const defaultData = { 
-                banned: [], 
-                history: [], 
-                metadata: { 
-                    totalBans: 0, 
-                    activeBans: 0, 
-                    expiredBans: 0, 
-                    permanentBans: 0 
-                } 
-            };
-            await redis.set('banned_ips', JSON.stringify(defaultData));
-            return defaultData;
-        }
-        
-        return typeof data === 'string' ? JSON.parse(data) : data;
-    } catch (error) {
-        console.error('❌ Erro no Redis, usando memória:', error);
-        return {
-            banned: [],
-            history: [],
-            metadata: { totalBans: 0, activeBans: 0, expiredBans: 0, permanentBans: 0 }
-        };
-    }
-}
-
-async function saveBannedIPs(data) {
-    try {
-        await redis.set('banned_ips', JSON.stringify(data));
-        return true;
-    } catch (error) {
-        console.error('❌ Erro ao salvar no Redis:', error);
-        return false;
-    }
 }
 
 // ============================================================
@@ -163,7 +153,6 @@ function getBanSeverity(reason) {
 // ============================================================
 
 export default async function handler(req, res) {
-    // ===== CORS =====
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -172,7 +161,6 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // ===== RATE LIMIT =====
     const clientIP = req.headers['x-forwarded-for']?.split(',')[0] || 
                      req.socket.remoteAddress || 
                      'unknown';
@@ -185,17 +173,12 @@ export default async function handler(req, res) {
         });
     }
 
-    // ===== CARREGAR DADOS =====
     let data = await getBannedIPs();
     data = cleanExpiredBans(data);
 
     const { method } = req;
 
-    // ============================================================
-    // GET
-    // ============================================================
     if (method === 'GET') {
-        // === Verificar IP ===
         if (req.query.check) {
             const ip = req.query.check;
             
@@ -239,7 +222,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // === Estatísticas ===
         if (req.query.stats === 'true') {
             const active = data.banned.filter(b => !isBanExpired(b));
             const expired = data.banned.filter(b => isBanExpired(b));
@@ -257,7 +239,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // === Listar bans ===
         if (req.query.list === 'all' || !req.query.list) {
             return res.status(200).json({
                 success: true,
@@ -270,7 +251,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // === Listar ativos ===
         if (req.query.list === 'active') {
             const active = data.banned.filter(b => !isBanExpired(b));
             return res.status(200).json({
@@ -280,7 +260,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // === Buscar ===
         if (req.query.search) {
             const search = req.query.search.toLowerCase();
             const results = data.banned.filter(b => 
@@ -301,9 +280,6 @@ export default async function handler(req, res) {
         });
     }
 
-    // ============================================================
-    // POST - Adicionar ban
-    // ============================================================
     if (method === 'POST') {
         const { ip, reason, expires, gif } = req.body;
 
@@ -321,7 +297,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // Verificar se já está banido
         const existing = data.banned.find(b => b.ip === ip);
         if (existing && !isBanExpired(existing)) {
             return res.status(400).json({ 
@@ -331,7 +306,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // Verificar bans consecutivos
         const previousBans = data.banned.filter(b => b.ip === ip).length;
         if (previousBans >= CONFIG.maxBansPerIP) {
             const permanentBan = {
@@ -355,7 +329,6 @@ export default async function handler(req, res) {
             });
         }
 
-        // Criar ban
         const expiresDate = expires || new Date(Date.now() + (CONFIG.autoUnbanAfter * 60 * 60 * 1000)).toISOString();
 
         const newBan = {
@@ -371,7 +344,6 @@ export default async function handler(req, res) {
 
         data.banned.push(newBan);
         
-        // Adicionar ao histórico
         data.history = data.history || [];
         data.history.push({
             type: 'ban',
@@ -393,9 +365,6 @@ export default async function handler(req, res) {
         });
     }
 
-    // ============================================================
-    // DELETE - Remover ban
-    // ============================================================
     if (method === 'DELETE') {
         const { ip } = req.body || req.query;
 
@@ -418,7 +387,6 @@ export default async function handler(req, res) {
         const removed = data.banned[index];
         data.banned.splice(index, 1);
         
-        // Adicionar ao histórico
         data.history = data.history || [];
         data.history.push({
             type: 'unban',
@@ -437,9 +405,6 @@ export default async function handler(req, res) {
         });
     }
 
-    // ============================================================
-    // PUT - Atualizar ban
-    // ============================================================
     if (method === 'PUT') {
         const { ip, reason, expires, gif } = req.body;
 
@@ -473,9 +438,6 @@ export default async function handler(req, res) {
         });
     }
 
-    // ============================================================
-    // Método não permitido
-    // ============================================================
     return res.status(405).json({ 
         success: false,
         error: 'Método não permitido' 
