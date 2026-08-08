@@ -280,6 +280,9 @@ export default async function handler(req, res) {
         });
     }
 
+    // ============================================================
+    // POST - CORRIGIDO PARA PERMANENTE
+    // ============================================================
     if (method === 'POST') {
         const { ip, reason, expires, gif } = req.body;
 
@@ -329,7 +332,24 @@ export default async function handler(req, res) {
             });
         }
 
-        const expiresDate = expires || new Date(Date.now() + (CONFIG.autoUnbanAfter * 60 * 60 * 1000)).toISOString();
+        // ===== CORREÇÃO: PERMANENTE =====
+        let expiresDate;
+        
+        // Se expires for null, undefined, "null" ou vazio -> PERMANENTE
+        if (expires === null || expires === undefined || expires === 'null' || expires === '') {
+            expiresDate = null;
+        } else {
+            try {
+                const parsedDate = new Date(expires);
+                if (!isNaN(parsedDate.getTime())) {
+                    expiresDate = parsedDate.toISOString();
+                } else {
+                    expiresDate = new Date(Date.now() + (CONFIG.autoUnbanAfter * 60 * 60 * 1000)).toISOString();
+                }
+            } catch {
+                expiresDate = new Date(Date.now() + (CONFIG.autoUnbanAfter * 60 * 60 * 1000)).toISOString();
+            }
+        }
 
         const newBan = {
             id: generateBanId(),
