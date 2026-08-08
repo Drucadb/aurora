@@ -9,6 +9,8 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.2",
+    "@vercel/kv": "^3.0.0",
     "@vercel/node": "^2.0.0"
   },
   "engines": {
