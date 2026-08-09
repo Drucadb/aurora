@@ -1523,7 +1523,8 @@
         .block-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.92);
+            background: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.18), rgba(0, 0, 0, 0.96) 58%);
+            background-color: rgba(0, 0, 0, 0.94);
             backdrop-filter: blur(24px);
             display: none;
             align-items: center;
@@ -1538,14 +1539,17 @@
         }
 
         .block-box {
-            background: linear-gradient(145deg, rgba(10, 5, 21, 0.98), rgba(26, 13, 46, 0.98));
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(239, 68, 68, 0.25);
-            border-radius: var(--radius);
-            padding: 2.2rem;
-            max-width: 480px;
+            position: relative;
+            background: linear-gradient(155deg, rgba(22, 14, 38, 0.99), rgba(9, 8, 15, 0.99));
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(167, 139, 250, 0.24);
+            border-top: 3px solid #ef4444;
+            border-radius: 22px;
+            padding: 2.4rem;
+            max-width: 520px;
             width: 100%;
             text-align: center;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75), 0 0 55px rgba(124, 58, 237, 0.14);
             animation: scalePop 0.35s ease-out;
         }
 
@@ -1640,6 +1644,35 @@
 
         .block-box .btn-block-action.wait {
             background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .block-box .support-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            width: 100%;
+            margin-top: 0.7rem;
+            padding: 0.78rem;
+            border: 1px solid rgba(167, 139, 250, 0.32);
+            border-radius: var(--radius-sm);
+            background: rgba(124, 58, 237, 0.12);
+            color: #ddd6fe;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.25s;
+        }
+
+        .block-box .support-action:hover {
+            background: rgba(124, 58, 237, 0.25);
+            border-color: rgba(196, 181, 253, 0.65);
+            transform: translateY(-2px);
+        }
+
+        .block-box .support-note {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            margin-top: 0.9rem;
         }
 
         /* ===== RESPONSIVO ===== */
@@ -1822,6 +1855,10 @@
             <button class="btn-block-action" id="blockBtn" onclick="window.location.reload()">
                 <i class="fas fa-sync-alt"></i> Tentar Novamente
             </button>
+            <a class="support-action" href="suporte.html?status=banned">
+                <i class="fas fa-headset"></i> Falar com o suporte
+            </a>
+            <p class="support-note">Se acredita que houve um engano, envie uma solicitação para análise.</p>
         </div>
     </div>
 
@@ -1833,6 +1870,7 @@
                 <a class="active" onclick="showSection('home')"><i class="fas fa-home"></i> Home</a>
                 <a onclick="showSection('recovery')"><i class="fas fa-sync-alt"></i> Recuperar</a>
                 <a onclick="showSection('comunidade')"><i class="fas fa-users"></i> Comunidade</a>
+                <a href="suporte.html"><i class="fas fa-headset"></i> Suporte</a>
                 <a onclick="showSection('faq')"><i class="fas fa-question-circle"></i> FAQ</a>
                 <a onclick="showSection('stats')"><i class="fas fa-chart-bar"></i> Stats</a>
                 <a onclick="showSection('donate')"><i class="fas fa-heart"></i> Doar</a>
@@ -2052,7 +2090,7 @@
     <footer class="footer">
         <div class="footer-grid">
             <div><h4>✨ Aurora Premium</h4><p>Plataforma profissional de recuperação de contas Roblox com segurança de nível militar e suporte 24/7.</p></div>
-            <div><h4>Links Rápidos</h4><ul><li><a href="#" onclick="showSection('home')">Home</a></li><li><a href="#" onclick="showSection('recovery')">Recuperação</a></li><li><a href="#" onclick="showSection('comunidade')">Comunidade</a></li><li><a href="#" onclick="showSection('faq')">FAQ</a></li></ul></div>
+            <div><h4>Links Rápidos</h4><ul><li><a href="#" onclick="showSection('home')">Home</a></li><li><a href="#" onclick="showSection('recovery')">Recuperação</a></li><li><a href="#" onclick="showSection('comunidade')">Comunidade</a></li><li><a href="#" onclick="showSection('faq')">FAQ</a></li><li><a href="suporte.html">Suporte</a></li></ul></div>
             <div><h4>Comunidade</h4><ul><li><a href="#" target="_blank">Discord</a></li><li><a href="#" target="_blank">TikTok</a></li><li><a href="#" target="_blank">Twitter</a></li></ul></div>
             <div><h4>Contato</h4><p><i class="fas fa-envelope"></i> support@aurora.com</p><p>Status: <span style="color:var(--secondary);">● Online ✨</span></p></div>
         </div>
