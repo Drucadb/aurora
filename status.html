@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08070d">
+  <meta name="description" content="Status dos serviços Aurora Premium">
+  <title>Status dos serviços | Aurora Premium</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root{--bg:#08070d;--surface:#111018;--surface-2:#171521;--line:#292633;--text:#faf9ff;--muted:#9e99aa;--purple:#8b5cf6;--purple-dark:#6d28d9;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--blue:#67e8f9;--radius:16px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{min-width:320px;margin:0;color:var(--text);background:var(--bg);font-family:Inter,Arial,sans-serif;line-height:1.5}a{color:inherit;text-decoration:none}button{font:inherit}
+    body:before{position:fixed;inset:0;z-index:-1;content:"";pointer-events:none;background:radial-gradient(circle at 50% -20%,#29164e 0,transparent 38%),radial-gradient(circle at 100% 85%,#1a0b34 0,transparent 30%)}
+    .topbar{height:72px;border-bottom:1px solid rgba(255,255,255,.08);background:#0b0a0fdd;backdrop-filter:blur(18px)}.topbar-inner{display:flex;width:min(1120px,calc(100% - 40px));height:100%;margin:auto;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:11px;font-size:17px;font-weight:800;letter-spacing:-.4px}.brand-mark{display:grid;width:35px;height:35px;place-items:center;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--purple-dark));box-shadow:0 8px 25px #8b5cf655}.top-links{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:700}.top-links a{padding:9px 12px;border-radius:8px;transition:.2s}.top-links a:hover{color:#fff;background:#ffffff0b}
+    .container{width:min(1120px,calc(100% - 40px));margin:auto}.hero{padding:68px 0 48px;text-align:center}.eyebrow{display:inline-flex;align-items:center;gap:8px;margin-bottom:17px;padding:7px 12px;border:1px solid #a78bfa44;border-radius:999px;color:#c4b5fd;background:#8b5cf611;font-size:11px;font-weight:800;text-transform:uppercase}.hero h1{margin:0 0 11px;font-size:clamp(34px,5vw,56px);letter-spacing:-2.4px;line-height:1.05}.hero p{max-width:570px;margin:0 auto;color:var(--muted);font-size:14px}.hero-meta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;color:#c7c1d1;font-size:11px}.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 13px #4ade80aa;animation:pulse 1.8s infinite}
+    .overall{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 22px;margin-bottom:26px;border:1px solid #3f3160;border-radius:var(--radius);background:linear-gradient(135deg,#171323,#100f16);box-shadow:0 18px 45px #0005}.overall-main{display:flex;align-items:center;gap:14px}.overall-icon{display:grid;width:46px;height:46px;place-items:center;border-radius:13px;color:#bbf7d0;background:#4ade8018;font-size:19px}.overall h2{margin:0;font-size:16px}.overall p{margin:3px 0 0;color:var(--muted);font-size:12px}.updated{color:var(--muted);font-size:11px;text-align:right}.updated strong{display:block;margin-top:4px;color:#d8d3df;font-size:12px}
+    .section-title{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:0 0 15px}.section-title h2{margin:0;font-size:19px;letter-spacing:-.4px}.section-title p{margin:0;color:var(--muted);font-size:12px}.services{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.service-card{padding:20px;border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(145deg,#15141d,#0f0f14);transition:.2s}.service-card:hover{transform:translateY(-3px);border-color:#634b8f;box-shadow:0 17px 35px #0006}.service-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.service-icon{display:grid;width:42px;height:42px;place-items:center;border-radius:11px;color:#c4b5fd;background:#8b5cf61a}.status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.status-badge:before{width:6px;height:6px;border-radius:50%;background:currentColor;content:""}.status-badge.operational{color:#86efac;background:#4ade8014}.status-badge.degraded{color:#fde68a;background:#fbbf2414}.status-badge.outage{color:#fca5a5;background:#f8717114}.status-badge.maintenance{color:#c4b5fd;background:#8b5cf614}.service-card h3{margin:18px 0 3px;font-size:14px}.service-card p{min-height:38px;margin:0;color:var(--muted);font-size:12px}.latency{display:flex;justify-content:space-between;margin-top:17px;padding-top:12px;border-top:1px solid var(--line);color:#777281;font-size:10px}.latency strong{color:#d8d2e0;font-weight:700}.empty-service{grid-column:1/-1;padding:35px;color:var(--muted);text-align:center}
+    .lower{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:44px 0 80px}.panel{padding:21px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(17,16,24,.78)}.panel h2{margin:0 0 8px;font-size:16px}.panel p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}.incident{display:flex;align-items:flex-start;gap:12px;margin-top:17px;color:#cfc9d9;font-size:12px}.incident i{margin-top:3px;color:var(--green)}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;padding:10px 14px;border:1px solid #a78bfa44;border-radius:9px;color:#ddd6fe;background:#8b5cf612;font-size:12px;font-weight:800;cursor:pointer;transition:.2s}.button:hover{border-color:#c4b5fd99;background:#8b5cf625;transform:translateY(-1px)}.footer{padding:22px 20px;border-top:1px solid var(--line);color:#74707d;font-size:11px;text-align:center}.footer strong{color:#a78bfa}
+    .loading{display:grid;min-height:140px;place-items:center;color:var(--muted);font-size:13px}.spinner{margin-right:8px}.toast{position:fixed;right:18px;bottom:18px;display:none;max-width:310px;padding:12px 14px;border:1px solid #f8717155;border-radius:10px;color:#fecaca;background:#2b1118;font-size:12px;box-shadow:0 15px 35px #0008}.toast.show{display:block}
+    @keyframes pulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.35);opacity:1}}@media(max-width:800px){.services{grid-template-columns:repeat(2,1fr)}.lower{grid-template-columns:1fr}}@media(max-width:560px){.topbar{height:64px}.topbar-inner,.container{width:min(100% - 28px,1120px)}.top-links a:first-child{display:none}.hero{padding:48px 0 34px}.hero h1{letter-spacing:-1.5px}.overall{align-items:flex-start;flex-direction:column;padding:17px}.updated{text-align:left}.services{grid-template-columns:1fr}.section-title{display:block}.section-title p{margin-top:5px}.lower{margin-bottom:54px}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner"><a class="brand" href="index.html"><span class="brand-mark"><i class="fas fa-sparkles"></i></span><span>Aurora Premium</span></a><nav class="top-links"><a href="index.html">Voltar ao início</a><a href="suporte.html">Suporte</a></nav></div></header>
+  <main class="container">
+    <section class="hero"><span class="eyebrow"><i class="fas fa-signal"></i> Status dos serviços</span><h1>Tudo funcionando<br><span>como deveria.</span></h1><p>Acompanhe em tempo real a disponibilidade dos serviços Aurora Premium.</p><div class="hero-meta"><span class="live-dot"></span><span id="heroMeta">Atualizando informações...</span></div></section>
+    <section class="overall" aria-live="polite"><div class="overall-main"><span class="overall-icon" id="overallIcon"><i class="fas fa-circle-check"></i></span><div><h2 id="overallTitle">Verificando os serviços</h2><p id="overallMessage">Consultando a API de status da Aurora.</p></div></div><div class="updated">Última verificação<strong id="updatedAt">—</strong></div></section>
+    <section aria-labelledby="servicesTitle"><div class="section-title"><h2 id="servicesTitle">Componentes</h2><p>Estado individual de cada serviço.</p></div><div class="services" id="services"><div class="loading"><i class="fas fa-spinner fa-spin spinner"></i> Carregando status...</div></div></section>
+    <section class="lower"><article class="panel"><h2><i class="fas fa-clock" style="color:#c4b5fd;margin-right:7px"></i> Monitoramento contínuo</h2><p>A Aurora verifica os serviços automaticamente e atualiza esta página periodicamente. Latência elevada aparece como instabilidade antes de uma possível queda.</p><button class="button" id="refreshButton"><i class="fas fa-rotate"></i> Atualizar agora</button></article><article class="panel"><h2><i class="fas fa-circle-info" style="color:#c4b5fd;margin-right:7px"></i> Histórico de incidentes</h2><div class="incident"><i class="fas fa-check-circle"></i><span>Nenhum incidente recente registrado.</span></div></article></section>
+  </main>
+  <footer class="footer"><strong>Aurora Premium</strong> · Página de status</footer>
+  <div class="toast" id="toast" role="status"></div>
+  <script>
+    (() => {
+      'use strict';
+      const apiUrl = '/api/status';
+      const refreshButton = document.getElementById('refreshButton');
+      const servicesElement = document.getElementById('services');
+      const toast = document.getElementById('toast');
+      const stateText = { operational: 'Operacional', degraded: 'Instável', outage: 'Fora do ar', maintenance: 'Manutenção' };
+      const stateIcons = { operational: 'fa-circle-check', degraded: 'fa-triangle-exclamation', outage: 'fa-circle-xmark', maintenance: 'fa-screwdriver-wrench' };
+      const serviceIcons = { 'Site principal': 'fa-globe', 'Central de suporte': 'fa-headset', 'API de status': 'fa-server' };
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+      }
+
+      function formatDate(value) {
+        if (!value) return '—';
+        return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value));
+      }
+
+      function setToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        window.setTimeout(() => toast.classList.remove('show'), 5000);
+      }
+
+      function renderOverall(data) {
+        const overall = data.overall || 'operational';
+        const title = { operational: 'Todos os sistemas operacionais', degraded: 'Alguns serviços estão instáveis', outage: 'Interrupção detectada', maintenance: 'Manutenção em andamento' }[overall];
+        const icon = document.getElementById('overallIcon');
+        icon.innerHTML = `<i class="fas ${stateIcons[overall] || stateIcons.operational}"></i>`;
+        icon.style.color = overall === 'outage' ? '#fca5a5' : overall === 'degraded' ? '#fde68a' : overall === 'maintenance' ? '#c4b5fd' : '#bbf7d0';
+        icon.style.background = overall === 'outage' ? '#f8717118' : overall === 'degraded' ? '#fbbf2418' : overall === 'maintenance' ? '#8b5cf618' : '#4ade8018';
+        document.getElementById('overallTitle').textContent = title;
+        document.getElementById('overallMessage').textContent = data.message || 'Status atualizado com sucesso.';
+        document.getElementById('updatedAt').textContent = formatDate(data.updatedAt);
+        document.getElementById('heroMeta').textContent = overall === 'operational' ? 'Todos os serviços estão online' : `Estado atual: ${stateText[overall] || overall}`;
+      }
+
+      function renderServices(services) {
+        if (!Array.isArray(services) || services.length === 0) {
+          servicesElement.innerHTML = '<div class="empty-service">Nenhum serviço foi retornado pela API.</div>';
+          return;
+        }
+        servicesElement.innerHTML = services.map((service) => {
+          const status = stateText[service.status] ? service.status : 'outage';
+          const latency = service.responseTimeMs == null ? 'Não medido' : `${escapeHtml(service.responseTimeMs)} ms`;
+          return `<article class="service-card"><div class="service-head"><span class="service-icon"><i class="fas ${serviceIcons[service.name] || 'fa-server'}"></i></span><span class="status-badge ${status}">${stateText[status]}</span></div><h3>${escapeHtml(service.name)}</h3><p>${escapeHtml(service.detail || 'Sem detalhes adicionais.')}</p><div class="latency"><span>Tempo de resposta</span><strong>${latency}</strong></div></article>`;
+        }).join('');
+      }
+
+      async function loadStatus() {
+        refreshButton.disabled = true;
+        refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+        try {
+          const response = await fetch(`${apiUrl}?t=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+          const data = await response.json();
+          if (!response.ok && !data.overall) throw new Error(`API respondeu com código ${response.status}.`);
+          renderOverall(data);
+          renderServices(data.services);
+        } catch (error) {
+          document.getElementById('overallTitle').textContent = 'Não foi possível consultar';
+          document.getElementById('overallMessage').textContent = 'A API de status está indisponível ou ainda não foi publicada.';
+          document.getElementById('heroMeta').textContent = 'Falha ao consultar a API';
+          servicesElement.innerHTML = '<div class="empty-service"><i class="fas fa-triangle-exclamation"></i> Verifique se `api/status/index.js` está publicado na Vercel.</div>';
+          setToast(error.message);
+        } finally {
+          refreshButton.disabled = false;
+          refreshButton.innerHTML = '<i class="fas fa-rotate"></i> Atualizar agora';
+        }
+      }
+
+      refreshButton.addEventListener('click', loadStatus);
+      loadStatus();
+      window.setInterval(loadStatus, 60000);
+    })();
+  </script>
+</body>
+</html>
