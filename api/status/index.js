@@ -7,7 +7,7 @@
  * STATUS_MESSAGE=Mensagem personalizada
  */
 
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   try {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
