@@ -480,6 +480,78 @@
       box-shadow: var(--shadow-card);
     }
 
+    .discord-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .discord-icon {
+      display: grid;
+      width: 58px;
+      height: 58px;
+      place-items: center;
+      border: 1px solid rgba(139, 92, 246, .34);
+      border-radius: 16px;
+      color: #fff;
+      background: linear-gradient(135deg, #5865f2, #7c3aed);
+      box-shadow: 0 14px 32px rgba(88, 101, 242, .28);
+      font-size: 28px;
+    }
+
+    .discord-panel h3 {
+      margin: 0;
+      color: var(--color-text);
+      font-size: 22px;
+      letter-spacing: -.7px;
+    }
+
+    .discord-panel p {
+      margin: 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .discord-note {
+      padding: 12px 13px;
+      border: 1px solid rgba(139, 92, 246, .22);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-soft);
+      background: rgba(139, 92, 246, .08);
+      font-size: 12px;
+    }
+
+    .discord-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 17px;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      background: #5865f2;
+      box-shadow: 0 12px 24px rgba(88, 101, 242, .22);
+      font-size: 13px;
+      font-weight: 800;
+      transition: transform var(--transition), filter var(--transition);
+    }
+
+    .discord-button:hover,
+    .discord-button:focus-visible {
+      filter: brightness(1.1);
+      outline: 0;
+      transform: translateY(-2px);
+    }
+
+    .discord-link {
+      overflow: hidden;
+      color: var(--color-primary-light);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .contact-card-header {
       display: flex;
       align-items: flex-start;
@@ -854,59 +926,37 @@
       <aside class="contact-card" id="contact">
         <div class="contact-card-header">
           <div>
-            <h2>Fale com a equipe</h2>
-            <p>Envie uma solicitação detalhada.</p>
+            <h2>Atendimento oficial</h2>
+            <p>Fale com a equipe Aurora pelo Discord.</p>
           </div>
-          <span class="contact-badge"><i class="fas fa-circle"></i> Online</span>
+          <span class="contact-badge"><i class="fas fa-circle"></i> Discord</span>
         </div>
 
-        <form id="supportForm" novalidate>
-          <div class="form-field">
-            <label for="nameInput">Nome</label>
-            <input id="nameInput" name="name" type="text" autocomplete="name" placeholder="Seu nome" required>
+        <div class="discord-panel">
+          <div class="discord-icon" aria-hidden="true"><i class="fab fa-discord"></i></div>
+          <div>
+            <h3>Atendemos somente via Discord</h3>
+            <p>Para manter o atendimento organizado e proteger sua conta, todas as solicitações são recebidas no nosso servidor oficial de suporte.</p>
           </div>
-
-          <div class="form-field">
-            <label for="emailInput">E-mail para resposta</label>
-            <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required>
-          </div>
-
-          <div class="form-field">
-            <label for="subjectInput">Motivo do contato</label>
-            <select id="subjectInput" name="subject" required>
-              <option value="" selected disabled>Selecione uma opção</option>
-              <option value="Não recebi o e-mail da Aurora">Não recebi o e-mail da Aurora</option>
-              <option value="Fui banido">Fui banido</option>
-              <option value="Problema técnico">Problema técnico</option>
-              <option value="Conta e acesso">Conta e acesso</option>
-              <option value="Outra dúvida">Outra dúvida</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="messageInput">Mensagem</label>
-            <textarea id="messageInput" name="message" placeholder="Explique o que aconteceu..." required></textarea>
-          </div>
-
-          <button class="submit-button" id="submitButton" type="submit">
-            <i class="fas fa-paper-plane" aria-hidden="true"></i>
-            <span>Enviar solicitação</span>
-          </button>
-          <div class="form-status" id="formStatus" role="status" aria-live="polite"></div>
-        </form>
+          <div class="discord-note"><i class="fas fa-shield-halved" aria-hidden="true"></i> Entre no servidor e abra um ticket no canal de atendimento Aurora.</div>
+          <a class="discord-button" href="https://discord.gg/sd6n2usqe4" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-discord" aria-hidden="true"></i>
+            <span>Abrir suporte no Discord</span>
+          </a>
+          <span class="discord-link">discord.gg/sd6n2usqe4</span>
+        </div>
       </aside>
     </section>
   </main>
 
-  <a class="mobile-cta" href="#contact"><i class="fas fa-headset"></i> Atendimento</a>
+  <a class="mobile-cta" href="https://discord.gg/sd6n2usqe4" target="_blank" rel="noopener noreferrer"><i class="fab fa-discord"></i> Abrir suporte</a>
   <footer class="site-footer"><strong>Aurora Premium</strong> · Central de atendimento</footer>
 
   <script>
     (() => {
       'use strict';
 
-      /* Cole aqui a URL da webhook. Evite publicar essa URL em sites públicos. */
-      const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1536051344664956948/5ZRW82p9KzRMc2WFMk8s2GWBJsRcmvw_NjjC2AwHA6eUG0Zz5jtReWhu0qrM8LWQI7w7';
+      
 
       const elements = {
         body: document.body,
@@ -917,11 +967,7 @@
         clearSearch: document.getElementById('clearSearch'),
         faqItems: Array.from(document.querySelectorAll('.faq-item')),
         emptyState: document.getElementById('emptyState'),
-        subjectInput: document.getElementById('subjectInput'),
         contact: document.getElementById('contact'),
-        supportForm: document.getElementById('supportForm'),
-        submitButton: document.getElementById('submitButton'),
-        formStatus: document.getElementById('formStatus'),
         scrollContactButtons: Array.from(document.querySelectorAll('[data-scroll-contact]'))
       };
 
@@ -930,15 +976,7 @@
         elements.contact.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
 
-      function setFormStatus(message, type) {
-        elements.formStatus.textContent = message;
-        elements.formStatus.className = `form-status is-visible ${type}`;
-      }
-
-      function clearFormStatus() {
-        elements.formStatus.textContent = '';
-        elements.formStatus.className = 'form-status';
-      }
+      
 
       function updateSearch() {
         const query = elements.searchInput.value.trim().toLowerCase();
@@ -978,87 +1016,12 @@
         elements.heroTitle.innerHTML = 'Precisa contestar um <span>banimento?</span>';
         elements.heroDescription.textContent = 'Explique o que aconteceu e envie sua solicitação diretamente para a equipe Aurora.';
         elements.banAlert.classList.add('is-visible');
-        elements.subjectInput.value = 'Fui banido';
-
         window.setTimeout(() => {
           scrollToContact();
-          document.getElementById('messageInput').focus({ preventScroll: true });
         }, 450);
       }
 
-      function validateForm(data) {
-        if (!data.name || data.name.length < 2) return 'Digite seu nome para continuar.';
-        if (!data.email || !data.email.includes('@')) return 'Digite um e-mail válido para receber a resposta.';
-        if (!data.subject) return 'Escolha o motivo do contato.';
-        if (!data.message || data.message.length < 10) return 'Descreva o problema com pelo menos 10 caracteres.';
-        return '';
-      }
-
-      function buildDiscordPayload(data) {
-        return {
-          allowed_mentions: { parse: [] },
-          username: 'Aurora Support',
-          embeds: [{
-            title: 'Nova solicitação de suporte',
-            color: 9144391,
-            fields: [
-              { name: 'Nome', value: data.name.slice(0, 80), inline: true },
-              { name: 'E-mail', value: data.email.slice(0, 160), inline: true },
-              { name: 'Motivo', value: data.subject.slice(0, 120), inline: false },
-              { name: 'Mensagem', value: data.message.slice(0, 1500), inline: false }
-            ],
-            footer: { text: 'Aurora Premium Support' },
-            timestamp: new Date().toISOString()
-          }]
-        };
-      }
-
-      async function submitSupportRequest(event) {
-        event.preventDefault();
-        clearFormStatus();
-
-        const formData = new FormData(elements.supportForm);
-        const data = {
-          name: String(formData.get('name') || '').trim(),
-          email: String(formData.get('email') || '').trim(),
-          subject: String(formData.get('subject') || '').trim(),
-          message: String(formData.get('message') || '').trim()
-        };
-
-        const validationError = validateForm(data);
-        if (validationError) {
-          setFormStatus(validationError, 'error');
-          return;
-        }
-
-        if (!DISCORD_WEBHOOK_URL.startsWith('https://discord.com/api/webhooks/')) {
-          setFormStatus('Configure a URL da webhook no código antes de enviar.', 'error');
-          return;
-        }
-
-        elements.submitButton.disabled = true;
-        elements.submitButton.querySelector('span').textContent = 'Enviando...';
-
-        try {
-          const response = await fetch(`${DISCORD_WEBHOOK_URL}?wait=true`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildDiscordPayload(data))
-          });
-
-          if (!response.ok) {
-            throw new Error(`O Discord recusou o envio (código ${response.status}).`);
-          }
-
-          elements.supportForm.reset();
-          setFormStatus('Solicitação enviada com sucesso. Aguarde o retorno da equipe.', 'success');
-        } catch (error) {
-          setFormStatus(`${error.message} Confira se a webhook está ativa.`, 'error');
-        } finally {
-          elements.submitButton.disabled = false;
-          elements.submitButton.querySelector('span').textContent = 'Enviar solicitação';
-        }
-      }
+      
 
       elements.searchInput.addEventListener('input', updateSearch);
       elements.clearSearch.addEventListener('click', () => {
@@ -1076,7 +1039,6 @@
         button.addEventListener('click', scrollToContact);
       });
 
-      elements.supportForm.addEventListener('submit', submitSupportRequest);
       activateBannedMode();
     })();
   </script>
