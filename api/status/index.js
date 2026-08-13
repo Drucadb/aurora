@@ -39,15 +39,15 @@ function getIncidents() {
   return [
     {
       id: 'inc-001',
-      title: 'Manutenção programada do site',
-      date: new Date().toISOString(),
-      status: 'ongoing',
-      description: 'Estamos realizando melhorias no site. Em breve tudo estará de volta.'
+      title: 'Manutenção programada da API',
+      date: '2026-08-10T02:00:00.000Z',
+      status: 'resolved',
+      description: 'Atualização de infraestrutura concluída com sucesso.'
     }
   ];
 }
 
-// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO COM DETECÇÃO DE MANUTENÇÃO =====
+// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO (CORRIGIDA) =====
 async function checkService(service) {
   const start = performance.now();
   
@@ -68,14 +68,21 @@ async function checkService(service) {
     const end = performance.now();
     const responseTime = Math.round(end - start);
     
-    // 🔥 LER O CONTEÚDO DA PÁGINA
+    // ===== LER O CONTEÚDO DA PÁGINA =====
     const text = await response.text();
     
-    // 🔥 VERIFICAR SE É PÁGINA DE MANUTENÇÃO
+    // ===== 🔥 VERIFICAR SE É PÁGINA DE MANUTENÇÃO (MAIS ESPECÍFICO) =====
     const maintenanceKeywords = ['manutenção', 'maintenance', 'em breve', 'voltaremos', '🔧', 'em manutenção'];
-    const isMaintenance = maintenanceKeywords.some(keyword => 
-      text.toLowerCase().includes(keyword.toLowerCase())
-    );
+    let maintenanceScore = 0;
+    
+    for (const keyword of maintenanceKeywords) {
+      if (text.toLowerCase().includes(keyword.toLowerCase())) {
+        maintenanceScore++;
+      }
+    }
+    
+    // 🔥 SÓ CONSIDERA MANUTENÇÃO SE TIVER PELO MENOS 2 PALAVRAS-CHAVE
+    const isMaintenance = maintenanceScore >= 2;
     
     if (isMaintenance) {
       return {
@@ -88,6 +95,7 @@ async function checkService(service) {
       };
     }
     
+    // ===== VERIFICAR SE A RESPOSTA FOI BEM-SUCEDIDA =====
     if (response.ok || response.status === 304) {
       return {
         ...service,
@@ -132,6 +140,7 @@ async function checkService(service) {
   }
 }
 
+// ===== CALCULAR STATUS GERAL =====
 function getOverallStatus(services) {
   if (services.some(s => s.status === 'outage')) return 'outage';
   if (services.some(s => s.status === 'maintenance')) return 'maintenance';
@@ -139,6 +148,7 @@ function getOverallStatus(services) {
   return 'operational';
 }
 
+// ===== GERAR UPTIME DINÂMICO =====
 function generateUptimeData(services, days = 30) {
   const data = [];
   const now = new Date();
@@ -184,17 +194,20 @@ function generateUptimeData(services, days = 30) {
   return data;
 }
 
+// ===== HANDLER PRINCIPAL =====
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET, HEAD');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
+  // ===== VERIFICAR SE DEVE USAR MODO MANUAL =====
   const manualMode = process.env.STATUS_MANUAL_MODE === 'true';
   
   let services;
   
   if (manualMode) {
+    // 🔥 MODO MANUAL: usa variáveis de ambiente
     const siteMode = process.env.STATUS_SITE_MODE || 'operational';
     const supportMode = process.env.STATUS_SUPPORT_MODE || 'operational';
     const apiMode = process.env.STATUS_API_MODE || 'operational';
@@ -205,12 +218,15 @@ export default async function handler(req, res) {
       { id: 'api', name: 'API de status', status: apiMode, responseTimeMs: null, checked: true, detail: apiMode === 'operational' ? 'API respondendo.' : 'Modo manual ativado.' }
     ];
   } else {
+    // 🔥 MODO AUTOMÁTICO: faz ping nos serviços
     const checkPromises = SERVICES_TO_CHECK.map(service => checkService(service));
     services = await Promise.all(checkPromises);
   }
 
+  // ===== CALCULAR OVERALL =====
   const overall = getOverallStatus(services);
 
+  // ===== MENSAGENS =====
   const messages = {
     operational: 'Todos os serviços estão funcionando normalmente. ✅',
     degraded: '⚠️ Alguns serviços estão com instabilidade.',
@@ -218,8 +234,10 @@ export default async function handler(req, res) {
     outage: '🚨 Estamos enfrentando uma interrupção.'
   };
 
+  // ===== GERAR UPTIME =====
   const uptimeData = generateUptimeData(services, 30);
 
+  // ===== MONTAR PAYLOAD =====
   const payload = {
     ok: true,
     service: 'Aurora Premium',
@@ -243,6 +261,7 @@ export default async function handler(req, res) {
     }
   };
 
+  // ===== CACHE E CORS =====
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
