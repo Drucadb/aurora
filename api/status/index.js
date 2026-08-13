@@ -8,21 +8,21 @@ const SERVICES_TO_CHECK = [
     id: 'site',
     name: 'Site principal',
     url: process.env.STATUS_SITE_URL || 'https://aurora-plum.vercel.app',
-    checkMethod: 'GET',
+    checkMethod: 'HEAD',
     timeout: 5000
   },
   {
     id: 'support',
     name: 'Central de suporte',
     url: process.env.STATUS_SUPPORT_URL || 'https://aurora-plum.vercel.app/suporte.html',
-    checkMethod: 'GET',
+    checkMethod: 'HEAD',
     timeout: 5000
   },
   {
     id: 'api',
     name: 'API de status',
     url: process.env.STATUS_API_URL || 'https://aurora-plum.vercel.app/api/status',
-    checkMethod: 'GET',
+    checkMethod: 'HEAD',
     timeout: 5000
   }
 ];
@@ -47,7 +47,7 @@ function getIncidents() {
   ];
 }
 
-// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO (CORRIGIDA) =====
+// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO (SEM DETECÇÃO DE TEXTO) =====
 async function checkService(service) {
   const start = performance.now();
   
@@ -56,7 +56,7 @@ async function checkService(service) {
     const timeoutId = setTimeout(() => controller.abort(), service.timeout || 5000);
     
     const response = await fetch(service.url, {
-      method: 'GET',
+      method: service.checkMethod || 'HEAD',
       signal: controller.signal,
       cache: 'no-store',
       headers: {
@@ -68,34 +68,7 @@ async function checkService(service) {
     const end = performance.now();
     const responseTime = Math.round(end - start);
     
-    // ===== LER O CONTEÚDO DA PÁGINA =====
-    const text = await response.text();
-    
-    // ===== 🔥 VERIFICAR SE É PÁGINA DE MANUTENÇÃO (MAIS ESPECÍFICO) =====
-    const maintenanceKeywords = ['manutenção', 'maintenance', 'em breve', 'voltaremos', '🔧', 'em manutenção'];
-    let maintenanceScore = 0;
-    
-    for (const keyword of maintenanceKeywords) {
-      if (text.toLowerCase().includes(keyword.toLowerCase())) {
-        maintenanceScore++;
-      }
-    }
-    
-    // 🔥 SÓ CONSIDERA MANUTENÇÃO SE TIVER PELO MENOS 2 PALAVRAS-CHAVE
-    const isMaintenance = maintenanceScore >= 2;
-    
-    if (isMaintenance) {
-      return {
-        ...service,
-        status: 'maintenance',
-        responseTimeMs: responseTime,
-        checked: true,
-        detail: '🔧 Site em manutenção programada.',
-        lastCheck: new Date().toISOString()
-      };
-    }
-    
-    // ===== VERIFICAR SE A RESPOSTA FOI BEM-SUCEDIDA =====
+    // 🔥 SÓ VERIFICA O STATUS HTTP, NÃO LÊ O CONTEÚDO
     if (response.ok || response.status === 304) {
       return {
         ...service,
@@ -111,7 +84,7 @@ async function checkService(service) {
         status: 'outage',
         responseTimeMs: responseTime,
         checked: true,
-        detail: `🚨 HTTP ${response.status} - Página não encontrada ou erro no servidor.`,
+        detail: `🚨 HTTP ${response.status} - Serviço indisponível.`,
         lastCheck: new Date().toISOString()
       };
     }
