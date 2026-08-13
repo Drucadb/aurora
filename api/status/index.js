@@ -28,17 +28,28 @@ const SERVICES_TO_CHECK = [
 ];
 
 // ============================================================
-//  WEBHOOK DO DISCORD
+//  WEBHOOK DO DISCORD (COM CONTROLE DE SPAM)
 // ============================================================
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1537268125496512583/8JPcsQ2ghVN5x5nGyMgSIlbYCYkRJAzKb36OyHCatfL8QA50fMQ2wvI6bC3jP_IInhq1';
 const WEBHOOK_ENABLED = process.env.DISCORD_WEBHOOK_ENABLED !== 'false';
 
-// Guarda o status anterior para não enviar notificações repetidas
+// 🔥 CONTROLE DE SPAM: só envia se passou pelo menos 2 minutos desde a última notificação
+let lastNotificationTime = 0;
+const MIN_NOTIFICATION_INTERVAL = 2 * 60 * 1000; // 2 minutos
+
+// Guarda o status anterior
 let previousOverall = 'operational';
 
 async function sendDiscordNotification(title, description, color) {
   if (!WEBHOOK_ENABLED) return false;
+  
+  // 🔥 VERIFICA SE JÁ PASSOU O TEMPO MÍNIMO DESDE A ÚLTIMA NOTIFICAÇÃO
+  const now = Date.now();
+  if (now - lastNotificationTime < MIN_NOTIFICATION_INTERVAL) {
+    console.log(`⏳ Aguardando ${Math.round((MIN_NOTIFICATION_INTERVAL - (now - lastNotificationTime)) / 1000)}s para enviar nova notificação`);
+    return false;
+  }
   
   try {
     const payload = {
@@ -61,6 +72,7 @@ async function sendDiscordNotification(title, description, color) {
 
     if (response.ok) {
       console.log('✅ Notificação enviada para o Discord');
+      lastNotificationTime = now; // 🔥 ATUALIZA O TEMPO DA ÚLTIMA NOTIFICAÇÃO
     } else {
       console.error('❌ Erro ao enviar webhook:', response.status);
     }
@@ -72,7 +84,7 @@ async function sendDiscordNotification(title, description, color) {
 }
 
 // ============================================================
-//  FUNÇÕES DA API (MANTIDAS IGUAIS)
+//  FUNÇÕES DA API
 // ============================================================
 
 function getIncidents() {
@@ -116,7 +128,6 @@ async function checkService(service) {
     const end = performance.now();
     const responseTime = Math.round(end - start);
     
-    // SÓ VERIFICA O STATUS HTTP
     if (response.ok || response.status === 304) {
       return {
         ...service,
@@ -248,7 +259,7 @@ export default async function handler(req, res) {
   // ===== CALCULAR OVERALL =====
   const overall = getOverallStatus(services);
 
-  // ===== 🔥 VERIFICAR MUDANÇA DE STATUS PARA ENVIAR WEBHOOK =====
+  // ===== 🔥 VERIFICAR MUDANÇA DE STATUS COM CONTROLE DE SPAM =====
   if (WEBHOOK_ENABLED && overall !== previousOverall) {
     let title = '';
     let description = '';
