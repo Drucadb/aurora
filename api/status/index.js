@@ -3,20 +3,19 @@
  * Rota da Vercel: /api/status
  */
 
-// ===== SERVIÇOS PARA MONITORAR =====
 const SERVICES_TO_CHECK = [
   {
     id: 'site',
     name: 'Site principal',
     url: process.env.STATUS_SITE_URL || 'https://aurora-plum.vercel.app',
-    checkMethod: 'HEAD',
+    checkMethod: 'GET',
     timeout: 5000
   },
   {
     id: 'support',
     name: 'Central de suporte',
     url: process.env.STATUS_SUPPORT_URL || 'https://aurora-plum.vercel.app/suporte.html',
-    checkMethod: 'HEAD',
+    checkMethod: 'GET',
     timeout: 5000
   },
   {
@@ -28,7 +27,6 @@ const SERVICES_TO_CHECK = [
   }
 ];
 
-// ===== INCIDENTES =====
 function getIncidents() {
   try {
     const envIncidents = process.env.STATUS_INCIDENTS;
@@ -41,15 +39,15 @@ function getIncidents() {
   return [
     {
       id: 'inc-001',
-      title: 'Manutenção programada da API',
-      date: '2026-08-10T02:00:00.000Z',
-      status: 'resolved',
-      description: 'Atualização de infraestrutura concluída com sucesso.'
+      title: 'Manutenção programada do site',
+      date: new Date().toISOString(),
+      status: 'ongoing',
+      description: 'Estamos realizando melhorias no site. Em breve tudo estará de volta.'
     }
   ];
 }
 
-// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO =====
+// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO COM DETECÇÃO DE MANUTENÇÃO =====
 async function checkService(service) {
   const start = performance.now();
   
@@ -58,7 +56,7 @@ async function checkService(service) {
     const timeoutId = setTimeout(() => controller.abort(), service.timeout || 5000);
     
     const response = await fetch(service.url, {
-      method: service.checkMethod || 'HEAD',
+      method: 'GET',
       signal: controller.signal,
       cache: 'no-store',
       headers: {
@@ -69,6 +67,26 @@ async function checkService(service) {
     clearTimeout(timeoutId);
     const end = performance.now();
     const responseTime = Math.round(end - start);
+    
+    // 🔥 LER O CONTEÚDO DA PÁGINA
+    const text = await response.text();
+    
+    // 🔥 VERIFICAR SE É PÁGINA DE MANUTENÇÃO
+    const maintenanceKeywords = ['manutenção', 'maintenance', 'em breve', 'voltaremos', '🔧', 'em manutenção'];
+    const isMaintenance = maintenanceKeywords.some(keyword => 
+      text.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    if (isMaintenance) {
+      return {
+        ...service,
+        status: 'maintenance',
+        responseTimeMs: responseTime,
+        checked: true,
+        detail: '🔧 Site em manutenção programada.',
+        lastCheck: new Date().toISOString()
+      };
+    }
     
     if (response.ok || response.status === 304) {
       return {
@@ -114,7 +132,6 @@ async function checkService(service) {
   }
 }
 
-// ===== CALCULAR STATUS GERAL =====
 function getOverallStatus(services) {
   if (services.some(s => s.status === 'outage')) return 'outage';
   if (services.some(s => s.status === 'maintenance')) return 'maintenance';
@@ -122,13 +139,12 @@ function getOverallStatus(services) {
   return 'operational';
 }
 
-// ===== 🔥 GERAR UPTIME DINÂMICO COM BASE NOS SERVIÇOS =====
 function generateUptimeData(services, days = 30) {
   const data = [];
   const now = new Date();
   
-  // Verifica se algum serviço está com problema
   const hasOutage = services.some(s => s.status === 'outage');
+  const hasMaintenance = services.some(s => s.status === 'maintenance');
   const hasDegraded = services.some(s => s.status === 'degraded');
   
   for (let i = days - 1; i >= 0; i--) {
@@ -138,17 +154,18 @@ function generateUptimeData(services, days = 30) {
     let uptime = 100;
     let status = 'operational';
     
-    // 🔥 SE HOJE TEM QUEDA, MARCA COMO VERMELHO
-    if (i === 0) { // Hoje
+    if (i === 0) {
       if (hasOutage) {
         uptime = 0;
         status = 'outage';
+      } else if (hasMaintenance) {
+        uptime = 95;
+        status = 'maintenance';
       } else if (hasDegraded) {
         uptime = 85;
         status = 'degraded';
       }
     } else {
-      // Dias anteriores: dados aleatórios realistas (mas fixos para cada dia)
       const seed = i * 7 + 3;
       const pseudoRandom = ((seed * 9301 + 49297) % 233280) / 233280;
       uptime = 99 + pseudoRandom * 0.8;
@@ -167,7 +184,6 @@ function generateUptimeData(services, days = 30) {
   return data;
 }
 
-// ===== HANDLER PRINCIPAL =====
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET, HEAD');
@@ -198,11 +214,10 @@ export default async function handler(req, res) {
   const messages = {
     operational: 'Todos os serviços estão funcionando normalmente. ✅',
     degraded: '⚠️ Alguns serviços estão com instabilidade.',
-    maintenance: '🔧 Manutenção em andamento.',
+    maintenance: '🔧 Estamos em manutenção programada. Em breve voltaremos!',
     outage: '🚨 Estamos enfrentando uma interrupção.'
   };
 
-  // 🔥 GERA UPTIME DINÂMICO
   const uptimeData = generateUptimeData(services, 30);
 
   const payload = {
@@ -214,7 +229,7 @@ export default async function handler(req, res) {
     updatedAt: new Date().toISOString(),
     services,
     incidents: getIncidents(),
-    uptime: uptimeData, // 🔥 AGORA É DINÂMICO
+    uptime: uptimeData,
     meta: {
       totalServices: services.length,
       operational: services.filter(s => s.status === 'operational').length,
