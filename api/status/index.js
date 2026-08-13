@@ -3,7 +3,7 @@
  * Rota da Vercel: /api/status
  *
  * Variáveis na Vercel:
- * STATUS_MODE=operational|degraded|maintenance|outage       (site inteiro)
+ * STATUS_MODE=operational|degraded|maintenance|outage
  * STATUS_SITE_MODE=operational|degraded|maintenance|outage
  * STATUS_SUPPORT_MODE=operational|degraded|maintenance|outage
  * STATUS_API_MODE=operational|degraded|maintenance|outage
@@ -14,12 +14,6 @@
  */
 
 const VALID_MODES = ['operational', 'degraded', 'maintenance', 'outage'];
-const MODE_LABELS = {
-  operational: 'Operacional',
-  degraded: 'Instável',
-  maintenance: 'Manutenção',
-  outage: 'Fora do ar'
-};
 
 function readMode(value, fallback = 'operational') {
   return VALID_MODES.includes(value) ? value : fallback;
@@ -32,76 +26,80 @@ function getOverallStatus(services) {
   return 'operational';
 }
 
-// ===== SIMULAÇÃO DE TEMPO DE RESPOSTA =====
-async function measureResponseTime(url, timeout = 3000) {
-  try {
-    const start = performance.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    const response = await fetch(url, { 
-      signal: controller.signal,
-      method: 'HEAD',
-      cache: 'no-store'
-    });
-    
-    clearTimeout(timeoutId);
-    const end = performance.now();
-    return Math.round(end - start);
-  } catch (error) {
-    return null;
-  }
-}
-
-// ===== INCIDENTES (exemplo, pode vir do env ou de um arquivo) =====
+// ===== INCIDENTES FIXOS (não mudam) =====
 function getIncidents() {
   // Tenta ler do env (JSON)
   try {
     const envIncidents = process.env.STATUS_INCIDENTS;
     if (envIncidents) {
       const parsed = JSON.parse(envIncidents);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch (e) {
     console.log('⚠️ Erro ao parsear STATUS_INCIDENTS');
   }
   
-  // Incidentes padrão (mock)
+  // 🔥 INCIDENTES FIXOS (não mudam com refresh)
   return [
     {
       id: 'inc-001',
       title: 'Manutenção programada da API',
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      date: '2026-08-10T02:00:00.000Z',
       status: 'resolved',
       description: 'Atualização de infraestrutura concluída com sucesso.'
     },
     {
       id: 'inc-002',
       title: 'Instabilidade temporária no site',
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      date: '2026-08-05T14:30:00.000Z',
       status: 'resolved',
       description: 'Problema com CDN foi identificado e corrigido.'
     }
   ];
 }
 
-// ===== DADOS DE UPTIME (simulados) =====
-function getUptimeData(days = 30) {
-  const data = [];
-  const now = new Date();
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    // Simula uptime realista (99.5% - 100%)
-    const baseUptime = 99 + Math.random() * 0.8;
-    const uptime = Math.min(100, Math.round(baseUptime * 10) / 10);
-    data.push({
-      date: date.toISOString().split('T')[0],
-      uptime: uptime,
-      status: uptime >= 99.5 ? 'operational' : uptime >= 98 ? 'degraded' : 'outage'
-    });
-  }
-  return data;
+// ===== UPTIME FIXO (não muda com refresh) =====
+function getUptimeData() {
+  // 🔥 DADOS FIXOS (simulam uptime realista mas não mudam)
+  const baseData = [
+    { date: '2026-07-14', uptime: 99.8 },
+    { date: '2026-07-15', uptime: 100.0 },
+    { date: '2026-07-16', uptime: 99.9 },
+    { date: '2026-07-17', uptime: 100.0 },
+    { date: '2026-07-18', uptime: 99.7 },
+    { date: '2026-07-19', uptime: 100.0 },
+    { date: '2026-07-20', uptime: 99.9 },
+    { date: '2026-07-21', uptime: 100.0 },
+    { date: '2026-07-22', uptime: 99.8 },
+    { date: '2026-07-23', uptime: 100.0 },
+    { date: '2026-07-24', uptime: 99.9 },
+    { date: '2026-07-25', uptime: 100.0 },
+    { date: '2026-07-26', uptime: 99.5 },
+    { date: '2026-07-27', uptime: 100.0 },
+    { date: '2026-07-28', uptime: 99.9 },
+    { date: '2026-07-29', uptime: 100.0 },
+    { date: '2026-07-30', uptime: 99.8 },
+    { date: '2026-07-31', uptime: 100.0 },
+    { date: '2026-08-01', uptime: 99.9 },
+    { date: '2026-08-02', uptime: 100.0 },
+    { date: '2026-08-03', uptime: 99.7 },
+    { date: '2026-08-04', uptime: 100.0 },
+    { date: '2026-08-05', uptime: 99.8 },
+    { date: '2026-08-06', uptime: 100.0 },
+    { date: '2026-08-07', uptime: 99.9 },
+    { date: '2026-08-08', uptime: 100.0 },
+    { date: '2026-08-09', uptime: 99.8 },
+    { date: '2026-08-10', uptime: 100.0 },
+    { date: '2026-08-11', uptime: 99.9 },
+    { date: '2026-08-12', uptime: 100.0 }
+  ];
+
+  // Converte para o formato esperado
+  return baseData.map(item => ({
+    date: item.date,
+    uptime: item.uptime,
+    status: item.uptime >= 99.5 ? 'operational' : item.uptime >= 98 ? 'degraded' : 'outage'
+  }));
 }
 
 export default async function handler(req, res) {
@@ -116,19 +114,13 @@ export default async function handler(req, res) {
     const supportMode = readMode(process.env.STATUS_SUPPORT_MODE, 'operational');
     const apiMode = readMode(process.env.STATUS_API_MODE, 'operational');
 
-    // ===== MEDIR TEMPO DE RESPOSTA (opcional) =====
-    // Descomente para medir tempo real (pode aumentar o tempo de resposta da API)
-    // const siteLatency = await measureResponseTime('https://aurora-plum.vercel.app');
-    // const supportLatency = await measureResponseTime('https://aurora-plum.vercel.app/suporte.html');
-    // const apiLatency = null; // já estamos na API
-
     // ===== MONTAR SERVIÇOS =====
     const services = [
       {
         id: 'site',
         name: 'Site principal',
         status: siteMode,
-        responseTimeMs: null, // siteLatency || null,
+        responseTimeMs: null,
         checked: true,
         detail: siteMode === 'outage' ? 'Site temporariamente indisponível. Estamos investigando.' :
                 siteMode === 'maintenance' ? 'Site em manutenção programada.' :
@@ -139,7 +131,7 @@ export default async function handler(req, res) {
         id: 'support',
         name: 'Central de suporte',
         status: supportMode,
-        responseTimeMs: null, // supportLatency || null,
+        responseTimeMs: null,
         checked: true,
         detail: supportMode === 'outage' ? 'Suporte temporariamente indisponível.' :
                 supportMode === 'maintenance' ? (process.env.STATUS_SUPPORT_MESSAGE || 'Atendimento em manutenção.') :
@@ -179,11 +171,8 @@ export default async function handler(req, res) {
       message: process.env.STATUS_MESSAGE || messages[overall] || 'Status atualizado.',
       updatedAt: new Date().toISOString(),
       services,
-      
-      // ===== NOVOS CAMPOS =====
-      incidents: getIncidents(),
-      uptime: getUptimeData(30),
-      
+      incidents: getIncidents(),      // 🔥 FIXO
+      uptime: getUptimeData(),        // 🔥 FIXO
       meta: {
         totalServices: services.length,
         operational: services.filter(s => s.status === 'operational').length,
@@ -191,8 +180,6 @@ export default async function handler(req, res) {
         maintenance: services.filter(s => s.status === 'maintenance').length,
         outage: services.filter(s => s.status === 'outage').length
       },
-      
-      // ===== TIMESTAMP EM UTC E LOCAL =====
       timestamps: {
         utc: new Date().toISOString(),
         local: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
