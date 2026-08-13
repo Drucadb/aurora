@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0713">
+  <meta name="description" content="A Aurora Premium está temporariamente em manutenção.">
+  <title>Aurora Premium — Em manutenção</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --background: #0b0713;
+      --background-soft: #110b1e;
+      --text: #f8f6ff;
+      --muted: #aaa2b9;
+      --muted-strong: #d2cde0;
+      --purple: #8b5cf6;
+      --purple-light: #c4b5fd;
+      --line: rgba(255,255,255,.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-width: 320px; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      color: var(--text);
+      background: var(--background);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+
+    .maintenance-page {
+      position: relative;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 24px 80px;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(ellipse at 50% 115%, rgba(109,40,217,.25), transparent 45%),
+        linear-gradient(180deg, #0b0713 0%, #0a0710 100%);
+    }
+
+    .maintenance-page::before,
+    .maintenance-page::after {
+      position: absolute;
+      z-index: -1;
+      width: 560px;
+      height: 560px;
+      border-radius: 50%;
+      content: "";
+      filter: blur(110px);
+      opacity: .14;
+      pointer-events: none;
+    }
+
+    .maintenance-page::before { top: -330px; left: -210px; background: #8b5cf6; }
+    .maintenance-page::after { right: -260px; bottom: -380px; background: #4c1d95; }
+
+    .topbar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      display: flex;
+      height: 78px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(22px, 6vw, 86px);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      background: rgba(11,7,19,.72);
+      backdrop-filter: blur(15px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), #5b21b6);
+      box-shadow: 0 8px 24px rgba(139,92,246,.32);
+    }
+
+    .top-link {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      transition: color .2s ease;
+    }
+
+    .top-link:hover { color: #fff; }
+
+    .content {
+      width: min(680px, 100%);
+      text-align: center;
+      animation: reveal .65s cubic-bezier(.16,1,.3,1) both;
+    }
+
+    .illustration {
+      position: relative;
+      width: 214px;
+      height: 146px;
+      margin: 0 auto 35px;
+    }
+
+    .mountain {
+      position: absolute;
+      right: 20px;
+      bottom: 11px;
+      width: 154px;
+      height: 106px;
+      overflow: hidden;
+      border-radius: 10px 10px 36px 36px;
+      transform: skewX(-13deg) rotate(-2deg);
+      background: linear-gradient(145deg, #5b21b6, #241235 74%);
+      box-shadow: inset 16px 15px 0 rgba(196,181,253,.12), 0 25px 48px rgba(0,0,0,.34);
+    }
+
+    .mountain::before {
+      position: absolute;
+      top: -31px;
+      left: 23px;
+      width: 88px;
+      height: 88px;
+      transform: rotate(45deg);
+      border-radius: 8px;
+      content: "";
+      background: #8b5cf6;
+      box-shadow: 17px 17px 0 rgba(196,181,253,.22);
+    }
+
+    .mountain::after {
+      position: absolute;
+      right: -12px;
+      bottom: 16px;
+      width: 82px;
+      height: 26px;
+      transform: rotate(-26deg);
+      border-radius: 50%;
+      content: "";
+      background: rgba(10,7,16,.38);
+    }
+
+    .sun {
+      position: absolute;
+      top: 14px;
+      left: 30px;
+      width: 33px;
+      height: 33px;
+      border-radius: 50%;
+      background: #c4b5fd;
+      box-shadow: 0 0 30px rgba(196,181,253,.45);
+    }
+
+    .cloud {
+      position: absolute;
+      bottom: 35px;
+      left: 10px;
+      width: 62px;
+      height: 17px;
+      border-radius: 20px;
+      background: rgba(210,201,231,.65);
+      box-shadow: 20px -9px 0 -5px rgba(210,201,231,.65), 42px 0 0 -2px rgba(210,201,231,.65);
+      opacity: .6;
+    }
+
+    .spark {
+      position: absolute;
+      color: var(--purple-light);
+      font-size: 11px;
+      animation: float 3.5s ease-in-out infinite;
+    }
+
+    .spark.one { top: 12px; right: 33px; }
+    .spark.two { top: 58px; right: 4px; animation-delay: -1.2s; }
+    .spark.three { bottom: 8px; left: 30px; animation-delay: -2.1s; }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 17px;
+      padding: 7px 12px;
+      border: 1px solid rgba(196,181,253,.22);
+      border-radius: 999px;
+      color: var(--purple-light);
+      background: rgba(139,92,246,.09);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      text-transform: uppercase;
+    }
+
+    .label i { font-size: 10px; }
+
+    h1 {
+      margin: 0 0 17px;
+      font-size: clamp(34px, 6vw, 58px);
+      font-weight: 800;
+      letter-spacing: -2.6px;
+      line-height: 1.03;
+    }
+
+    h1 span {
+      color: var(--purple-light);
+    }
+
+    .description {
+      max-width: 535px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      margin: 31px auto 21px;
+      background: linear-gradient(90deg, transparent, var(--line), transparent);
+    }
+
+    .status-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted-strong);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 13px rgba(245,158,11,.75);
+      animation: pulse 1.7s ease-in-out infinite;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-width: 155px;
+      padding: 12px 18px;
+      border: 1px solid rgba(196,181,253,.23);
+      border-radius: 9px;
+      color: #fff;
+      background: rgba(255,255,255,.05);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+
+    .button:hover { transform: translateY(-2px); border-color: rgba(196,181,253,.55); background: rgba(255,255,255,.1); }
+    .button.primary { border-color: transparent; background: linear-gradient(135deg, var(--purple), #5b21b6); box-shadow: 0 10px 25px rgba(109,40,217,.25); }
+    .button.primary:hover { background: linear-gradient(135deg, #9f75ff, #6d28d9); }
+
+    .footer {
+      position: absolute;
+      right: 0;
+      bottom: 22px;
+      left: 0;
+      color: #716c7c;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .footer strong { color: #a78bfa; }
+
+    @keyframes reveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+    @keyframes float { 0%, 100% { transform: translateY(0); opacity: .55; } 50% { transform: translateY(-8px); opacity: 1; } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: .8; } 50% { transform: scale(1.35); opacity: 1; } }
+
+    @media (max-width: 620px) {
+      body { overflow: auto; }
+      .maintenance-page { min-height: 100svh; padding: 95px 20px 72px; }
+      .topbar { height: 66px; padding: 0 18px; }
+      .top-link { font-size: 11px; }
+      .illustration { transform: scale(.86); margin-top: -8px; margin-bottom: 19px; }
+      h1 { letter-spacing: -1.7px; }
+      .description { font-size: 13px; }
+      .actions { flex-direction: column; }
+      .button { width: min(300px, 100%); }
+      .footer { bottom: 15px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="maintenance-page">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Voltar para Aurora Premium">
+        <span class="brand-mark"><i class="fas fa-sparkles"></i></span>
+        <span>Aurora Premium</span>
+      </a>
+      <a class="top-link" href="suporte.html">Abrir suporte</a>
+    </header>
+
+    <section class="content" aria-labelledby="maintenanceTitle">
+      <div class="illustration" aria-hidden="true">
+        <div class="sun"></div>
+        <div class="cloud"></div>
+        <div class="mountain"></div>
+        <i class="spark one fas fa-sparkles"></i>
+        <i class="spark two fas fa-star"></i>
+        <i class="spark three fas fa-plus"></i>
+      </div>
+
+      <div class="label"><i class="fas fa-screwdriver-wrench"></i> Manutenção programada</div>
+      <h1 id="maintenanceTitle">Estamos trabalhando<br><span>em algo especial.</span></h1>
+      <p class="description">A Aurora está temporariamente indisponível enquanto realizamos algumas melhorias. O site estará de volta em breve.</p>
+
+      <div class="divider"></div>
+      <div class="status-line"><span class="status-dot"></span> A equipe está trabalhando na atualização</div>
+
+      <div class="actions">
+        <a class="button primary" href="suporte.html"><i class="fas fa-headset"></i> Falar com suporte</a>
+        <button class="button" id="refreshButton" type="button"><i class="fas fa-rotate"></i> Tentar novamente</button>
+      </div>
+    </section>
+
+    <footer class="footer"><strong>Aurora Premium</strong> · Voltaremos em breve</footer>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const refreshButton = document.getElementById('refreshButton');
+      const originalContent = refreshButton.innerHTML;
+
+      refreshButton.addEventListener('click', () => {
+        refreshButton.disabled = true;
+        refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+        window.setTimeout(() => window.location.reload(), 900);
+      });
+
+      window.setTimeout(() => window.location.reload(), 60000);
+      window.addEventListener('pageshow', () => {
+        refreshButton.disabled = false;
+        refreshButton.innerHTML = originalContent;
+      });
+    })();
+  </script>
+</body>
+</html>
