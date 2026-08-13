@@ -84,7 +84,7 @@
       </div>
     </section>
 
-    <!-- ===== NOVO: GRÁFICO DE UPTIME ===== -->
+    <!-- ===== GRÁFICO DE UPTIME ===== -->
     <section class="uptime-chart">
       <h2><i class="fas fa-chart-line"></i> Uptime nos últimos 30 dias</h2>
       <div class="chart-container" id="chartContainer">
@@ -166,7 +166,6 @@
         window.setTimeout(() => toast.classList.remove('show'), 5000);
       }
 
-      // ===== ATUALIZAR HEADER COM STATUS =====
       function updateHeaderStatus(overall) {
         const dot = document.getElementById('headerDot');
         const text = document.getElementById('headerStatusText');
@@ -181,7 +180,6 @@
         text.textContent = status.label;
       }
 
-      // ===== RENDER OVERALL =====
       function renderOverall(data) {
         const overall = data.overall || 'operational';
         const title = {
@@ -212,7 +210,6 @@
         updateHeaderStatus(overall);
       }
 
-      // ===== RENDER SERVICES =====
       function renderServices(services) {
         if (!Array.isArray(services) || services.length === 0) {
           servicesElement.innerHTML = '<div class="empty-service">Nenhum serviço foi retornado pela API.</div>';
@@ -239,34 +236,35 @@
         }).join('');
       }
 
-      // ===== GRÁFICO DE UPTIME =====
-      function generateUptimeData() {
-        const days = 30;
-        const data = [];
-        const now = new Date();
-        for (let i = days - 1; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          const uptime = Math.random() > 0.05 ? 95 + Math.random() * 5 : 80 + Math.random() * 15;
-          data.push({
-            date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-            uptime: Math.min(100, Math.round(uptime))
-          });
-        }
-        return data;
-      }
-
-      function renderUptimeChart() {
+      // ===== CORRIGIDO: USA DADOS DA API =====
+      function renderUptimeChart(uptimeData) {
         const container = document.getElementById('chartContainer');
-        const data = generateUptimeData();
+        
+        if (!uptimeData || !Array.isArray(uptimeData) || uptimeData.length === 0) {
+          container.innerHTML = `
+            <div class="chart-placeholder">
+              <i class="fas fa-chart-simple"></i>
+              <span>Nenhum dado de uptime disponível.</span>
+            </div>
+          `;
+          return;
+        }
 
+        // Pega os últimos 30 dias ou todos os disponíveis
+        const data = uptimeData.slice(-30);
+        
         const bars = data.map(item => {
           const height = Math.max(8, (item.uptime / 100) * 90);
-          const status = item.uptime >= 99 ? 'up' : item.uptime >= 95 ? 'warning' : 'down';
-          return `<div class="uptime-bar ${status}" style="height:${height}px" title="${item.uptime}%"></div>`;
+          const status = item.uptime >= 99.5 ? 'up' : item.uptime >= 98 ? 'warning' : 'down';
+          const date = new Date(item.date);
+          const label = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          return `<div class="uptime-bar ${status}" style="height:${height}px" title="${item.uptime}% em ${label}"></div>`;
         }).join('');
 
-        const labels = data.map(item => `<span>${item.date}</span>`).join('');
+        const labels = data.map(item => {
+          const date = new Date(item.date);
+          return `<span>${date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>`;
+        }).join('');
 
         container.innerHTML = `
           <div class="uptime-bars">${bars}</div>
@@ -274,17 +272,11 @@
         `;
       }
 
-      // ===== INCIDENTES MOCK =====
-      function renderIncidents() {
-        // Mock de incidentes (substituir por dados reais da API)
-        const incidents = [
-          // { title: 'Instabilidade na API', date: '12/08/2026 14:30', status: 'resolved' },
-          // { title: 'Manutenção programada', date: '10/08/2026 02:00', status: 'ongoing' }
-        ];
-
+      // ===== CORRIGIDO: USA DADOS DA API =====
+      function renderIncidents(incidents) {
         if (!incidentList) return;
 
-        if (incidents.length === 0) {
+        if (!incidents || !Array.isArray(incidents) || incidents.length === 0) {
           incidentList.innerHTML = `
             <div class="incident">
               <i class="fas fa-check-circle" style="color:#4ade80"></i>
@@ -294,15 +286,25 @@
           return;
         }
 
-        incidentList.innerHTML = incidents.map(inc => `
-          <div class="incident-item">
-            <i class="fas ${inc.status === 'resolved' ? 'fa-check-circle status-resolved' : 'fa-circle-exclamation status-ongoing'}"></i>
-            <div>
-              <strong style="font-size:12px">${inc.title}</strong>
-              <p style="margin:2px 0 0;font-size:11px;color:var(--muted)">${inc.date} · ${inc.status === 'resolved' ? '✅ Resolvido' : '🔄 Em andamento'}</p>
+        incidentList.innerHTML = incidents.map(inc => {
+          const isResolved = inc.status === 'resolved';
+          const date = new Date(inc.date);
+          const formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          const formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          
+          return `
+            <div class="incident-item">
+              <i class="fas ${isResolved ? 'fa-check-circle status-resolved' : 'fa-circle-exclamation status-ongoing'}"></i>
+              <div>
+                <strong style="font-size:12px">${escapeHtml(inc.title)}</strong>
+                <p style="margin:2px 0 0;font-size:11px;color:var(--muted)">
+                  ${formattedDate} ${formattedTime} · ${isResolved ? '✅ Resolvido' : '🔄 Em andamento'}
+                </p>
+                ${inc.description ? `<p style="margin:4px 0 0;font-size:10px;color:var(--muted)">${escapeHtml(inc.description)}</p>` : ''}
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       // ===== LOAD STATUS =====
@@ -323,7 +325,8 @@
 
           renderOverall(data);
           renderServices(data.services);
-          renderIncidents();
+          renderUptimeChart(data.uptime);   // 🔥 USA DADOS DA API
+          renderIncidents(data.incidents);  // 🔥 USA DADOS DA API
 
         } catch (error) {
           document.getElementById('overallTitle').textContent = 'Não foi possível consultar';
@@ -348,7 +351,6 @@
       // ===== INICIAR =====
       loadStatus();
       window.setInterval(loadStatus, 60000);
-      renderUptimeChart();
 
     })();
   </script>
