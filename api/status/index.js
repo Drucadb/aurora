@@ -1,45 +1,50 @@
 /**
- * Aurora Premium — Status API
+ * Aurora Premium — Status API com Monitoramento Ativo
  * Rota da Vercel: /api/status
- *
- * Variáveis na Vercel:
- * STATUS_MODE=operational|degraded|maintenance|outage
- * STATUS_SITE_MODE=operational|degraded|maintenance|outage
- * STATUS_SUPPORT_MODE=operational|degraded|maintenance|outage
- * STATUS_API_MODE=operational|degraded|maintenance|outage
- * STATUS_MESSAGE=Mensagem geral opcional
- * STATUS_SUPPORT_MESSAGE=Mensagem do suporte opcional
- * STATUS_API_MESSAGE=Mensagem da API opcional
- * STATUS_INCIDENTS=JSON com incidentes (opcional)
+ * 
+ * Faz ping nos serviços para detectar se estão online
  */
 
 const VALID_MODES = ['operational', 'degraded', 'maintenance', 'outage'];
 
-function readMode(value, fallback = 'operational') {
-  return VALID_MODES.includes(value) ? value : fallback;
-}
+// ===== SERVIÇOS PARA MONITORAR =====
+const SERVICES_TO_CHECK = [
+  {
+    id: 'site',
+    name: 'Site principal',
+    url: process.env.STATUS_SITE_URL || 'https://aurora-plum.vercel.app',
+    checkMethod: 'HEAD',
+    timeout: 5000,
+    fallbackStatus: 'operational'
+  },
+  {
+    id: 'support',
+    name: 'Central de suporte',
+    url: process.env.STATUS_SUPPORT_URL || 'https://aurora-plum.vercel.app/suporte.html',
+    checkMethod: 'HEAD',
+    timeout: 5000,
+    fallbackStatus: 'operational'
+  },
+  {
+    id: 'api',
+    name: 'API de status',
+    url: process.env.STATUS_API_URL || 'https://aurora-plum.vercel.app/api/status',
+    checkMethod: 'GET',
+    timeout: 5000,
+    fallbackStatus: 'operational'
+  }
+];
 
-function getOverallStatus(services) {
-  if (services.some(s => s.status === 'outage')) return 'outage';
-  if (services.some(s => s.status === 'maintenance')) return 'maintenance';
-  if (services.some(s => s.status === 'degraded')) return 'degraded';
-  return 'operational';
-}
-
-// ===== INCIDENTES FIXOS (não mudam) =====
+// ===== INCIDENTES FIXOS =====
 function getIncidents() {
-  // Tenta ler do env (JSON)
   try {
     const envIncidents = process.env.STATUS_INCIDENTS;
     if (envIncidents) {
       const parsed = JSON.parse(envIncidents);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch (e) {
-    console.log('⚠️ Erro ao parsear STATUS_INCIDENTS');
-  }
-  
-  // 🔥 INCIDENTES FIXOS (não mudam com refresh)
+  } catch (e) {}
+
   return [
     {
       id: 'inc-001',
@@ -47,54 +52,30 @@ function getIncidents() {
       date: '2026-08-10T02:00:00.000Z',
       status: 'resolved',
       description: 'Atualização de infraestrutura concluída com sucesso.'
-    },
-    {
-      id: 'inc-002',
-      title: 'Instabilidade temporária no site',
-      date: '2026-08-05T14:30:00.000Z',
-      status: 'resolved',
-      description: 'Problema com CDN foi identificado e corrigido.'
     }
   ];
 }
 
-// ===== UPTIME FIXO (não muda com refresh) =====
+// ===== UPTIME FIXO =====
 function getUptimeData() {
-  // 🔥 DADOS FIXOS (simulam uptime realista mas não mudam)
   const baseData = [
-    { date: '2026-07-14', uptime: 99.8 },
-    { date: '2026-07-15', uptime: 100.0 },
-    { date: '2026-07-16', uptime: 99.9 },
-    { date: '2026-07-17', uptime: 100.0 },
-    { date: '2026-07-18', uptime: 99.7 },
-    { date: '2026-07-19', uptime: 100.0 },
-    { date: '2026-07-20', uptime: 99.9 },
-    { date: '2026-07-21', uptime: 100.0 },
-    { date: '2026-07-22', uptime: 99.8 },
-    { date: '2026-07-23', uptime: 100.0 },
-    { date: '2026-07-24', uptime: 99.9 },
-    { date: '2026-07-25', uptime: 100.0 },
-    { date: '2026-07-26', uptime: 99.5 },
-    { date: '2026-07-27', uptime: 100.0 },
-    { date: '2026-07-28', uptime: 99.9 },
-    { date: '2026-07-29', uptime: 100.0 },
-    { date: '2026-07-30', uptime: 99.8 },
-    { date: '2026-07-31', uptime: 100.0 },
-    { date: '2026-08-01', uptime: 99.9 },
-    { date: '2026-08-02', uptime: 100.0 },
-    { date: '2026-08-03', uptime: 99.7 },
-    { date: '2026-08-04', uptime: 100.0 },
-    { date: '2026-08-05', uptime: 99.8 },
-    { date: '2026-08-06', uptime: 100.0 },
-    { date: '2026-08-07', uptime: 99.9 },
-    { date: '2026-08-08', uptime: 100.0 },
-    { date: '2026-08-09', uptime: 99.8 },
-    { date: '2026-08-10', uptime: 100.0 },
-    { date: '2026-08-11', uptime: 99.9 },
-    { date: '2026-08-12', uptime: 100.0 }
+    { date: '2026-07-14', uptime: 99.8 }, { date: '2026-07-15', uptime: 100.0 },
+    { date: '2026-07-16', uptime: 99.9 }, { date: '2026-07-17', uptime: 100.0 },
+    { date: '2026-07-18', uptime: 99.7 }, { date: '2026-07-19', uptime: 100.0 },
+    { date: '2026-07-20', uptime: 99.9 }, { date: '2026-07-21', uptime: 100.0 },
+    { date: '2026-07-22', uptime: 99.8 }, { date: '2026-07-23', uptime: 100.0 },
+    { date: '2026-07-24', uptime: 99.9 }, { date: '2026-07-25', uptime: 100.0 },
+    { date: '2026-07-26', uptime: 99.5 }, { date: '2026-07-27', uptime: 100.0 },
+    { date: '2026-07-28', uptime: 99.9 }, { date: '2026-07-29', uptime: 100.0 },
+    { date: '2026-07-30', uptime: 99.8 }, { date: '2026-07-31', uptime: 100.0 },
+    { date: '2026-08-01', uptime: 99.9 }, { date: '2026-08-02', uptime: 100.0 },
+    { date: '2026-08-03', uptime: 99.7 }, { date: '2026-08-04', uptime: 100.0 },
+    { date: '2026-08-05', uptime: 99.8 }, { date: '2026-08-06', uptime: 100.0 },
+    { date: '2026-08-07', uptime: 99.9 }, { date: '2026-08-08', uptime: 100.0 },
+    { date: '2026-08-09', uptime: 99.8 }, { date: '2026-08-10', uptime: 100.0 },
+    { date: '2026-08-11', uptime: 99.9 }, { date: '2026-08-12', uptime: 100.0 }
   ];
 
-  // Converte para o formato esperado
   return baseData.map(item => ({
     date: item.date,
     uptime: item.uptime,
@@ -102,112 +83,150 @@ function getUptimeData() {
   }));
 }
 
-export default async function handler(req, res) {
+// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO =====
+async function checkService(service) {
+  const start = performance.now();
+  
   try {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.setHeader('Allow', 'GET, HEAD');
-      return res.status(405).json({ ok: false, error: 'Method not allowed' });
-    }
-
-    // ===== LER CONFIGURAÇÕES =====
-    const siteMode = readMode(process.env.STATUS_SITE_MODE, readMode(process.env.STATUS_MODE));
-    const supportMode = readMode(process.env.STATUS_SUPPORT_MODE, 'operational');
-    const apiMode = readMode(process.env.STATUS_API_MODE, 'operational');
-
-    // ===== MONTAR SERVIÇOS =====
-    const services = [
-      {
-        id: 'site',
-        name: 'Site principal',
-        status: siteMode,
-        responseTimeMs: null,
-        checked: true,
-        detail: siteMode === 'outage' ? 'Site temporariamente indisponível. Estamos investigando.' :
-                siteMode === 'maintenance' ? 'Site em manutenção programada.' :
-                siteMode === 'degraded' ? 'Site com instabilidade momentânea.' :
-                'Site disponível e funcionando normalmente.'
-      },
-      {
-        id: 'support',
-        name: 'Central de suporte',
-        status: supportMode,
-        responseTimeMs: null,
-        checked: true,
-        detail: supportMode === 'outage' ? 'Suporte temporariamente indisponível.' :
-                supportMode === 'maintenance' ? (process.env.STATUS_SUPPORT_MESSAGE || 'Atendimento em manutenção.') :
-                supportMode === 'degraded' ? 'Suporte com alta demanda, tempo de resposta pode ser maior.' :
-                'Central disponível e funcionando normalmente.'
-      },
-      {
-        id: 'api',
-        name: 'API de status',
-        status: apiMode,
-        responseTimeMs: null,
-        checked: true,
-        detail: apiMode === 'outage' ? 'API de status indisponível.' :
-                apiMode === 'maintenance' ? (process.env.STATUS_API_MESSAGE || 'API em manutenção.') :
-                apiMode === 'degraded' ? 'API com instabilidade momentânea.' :
-                'Endpoint respondendo normalmente.'
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), service.timeout || 5000);
+    
+    const response = await fetch(service.url, {
+      method: service.checkMethod || 'HEAD',
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: {
+        'User-Agent': 'Aurora-Status-Checker/1.0'
       }
-    ];
-
-    // ===== CALCULAR STATUS GERAL =====
-    const overall = getOverallStatus(services);
-
-    // ===== MENSAGENS =====
-    const messages = {
-      operational: 'Todos os serviços estão funcionando normalmente. ✅',
-      degraded: '⚠️ Alguns serviços estão com instabilidade. Estamos trabalhando para normalizar.',
-      maintenance: '🔧 Estamos realizando manutenção programada. Em breve tudo estará de volta.',
-      outage: '🚨 Estamos enfrentando uma interrupção. Já estamos trabalhando na solução.'
-    };
-
-    // ===== MONTAR PAYLOAD =====
-    const payload = {
-      ok: true,
-      service: 'Aurora Premium',
-      overall,
-      maintenance: overall === 'maintenance',
-      message: process.env.STATUS_MESSAGE || messages[overall] || 'Status atualizado.',
-      updatedAt: new Date().toISOString(),
-      services,
-      incidents: getIncidents(),      // 🔥 FIXO
-      uptime: getUptimeData(),        // 🔥 FIXO
-      meta: {
-        totalServices: services.length,
-        operational: services.filter(s => s.status === 'operational').length,
-        degraded: services.filter(s => s.status === 'degraded').length,
-        maintenance: services.filter(s => s.status === 'maintenance').length,
-        outage: services.filter(s => s.status === 'outage').length
-      },
-      timestamps: {
-        utc: new Date().toISOString(),
-        local: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-      }
-    };
-
-    // ===== CACHE E CORS =====
-    res.setHeader('Cache-Control', 'no-store, max-age=0');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    return res.status(200).json(payload);
-
-  } catch (error) {
-    console.error('Status API error:', error);
-    return res.status(200).json({
-      ok: false,
-      service: 'Aurora Premium',
-      overall: 'degraded',
-      maintenance: false,
-      message: 'A API está respondendo com limitações.',
-      updatedAt: new Date().toISOString(),
-      services: [
-        { id: 'api', name: 'API de status', status: 'degraded', responseTimeMs: null, checked: false, detail: 'Resposta de segurança ativada.' }
-      ],
-      incidents: [],
-      uptime: [],
-      meta: { totalServices: 1, operational: 0, degraded: 1, maintenance: 0, outage: 0 },
-      timestamps: { utc: new Date().toISOString(), local: new Date().toLocaleString('pt-BR') }
     });
+    
+    clearTimeout(timeoutId);
+    const end = performance.now();
+    const responseTime = Math.round(end - start);
+    
+    // 🔥 VERIFICA SE A RESPOSTA FOI BEM-SUCEDIDA
+    const isSuccess = response.ok || response.status === 304 || response.status === 302 || response.status === 301;
+    
+    if (isSuccess) {
+      return {
+        ...service,
+        status: 'operational',
+        responseTimeMs: responseTime,
+        checked: true,
+        detail: 'Serviço respondendo normalmente.',
+        lastCheck: new Date().toISOString()
+      };
+    } else {
+      return {
+        ...service,
+        status: 'degraded',
+        responseTimeMs: responseTime,
+        checked: true,
+        detail: `Resposta HTTP ${response.status} - Serviço pode estar com problemas.`,
+        lastCheck: new Date().toISOString()
+      };
+    }
+    
+  } catch (error) {
+    // 🔥 ERRO = SERVIÇO FORA DO AR
+    let detail = 'Serviço indisponível.';
+    if (error.name === 'AbortError') {
+      detail = 'Tempo de resposta excedido (timeout).';
+    } else if (error.code === 'ENOTFOUND') {
+      detail = 'Servidor não encontrado (DNS).';
+    } else if (error.code === 'ECONNREFUSED') {
+      detail = 'Conexão recusada.';
+    } else {
+      detail = error.message || 'Erro desconhecido.';
+    }
+    
+    return {
+      ...service,
+      status: 'outage',
+      responseTimeMs: null,
+      checked: true,
+      detail: `🚨 ${detail}`,
+      lastCheck: new Date().toISOString(),
+      error: error.message
+    };
   }
+}
+
+// ===== CALCULAR STATUS GERAL =====
+function getOverallStatus(services) {
+  if (services.some(s => s.status === 'outage')) return 'outage';
+  if (services.some(s => s.status === 'maintenance')) return 'maintenance';
+  if (services.some(s => s.status === 'degraded')) return 'degraded';
+  return 'operational';
+}
+
+// ===== HANDLER PRINCIPAL =====
+export default async function handler(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD');
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  }
+
+  // ===== VERIFICAR SE DEVE USAR MODO MANUAL =====
+  const manualMode = process.env.STATUS_MANUAL_MODE === 'true';
+  
+  let services;
+  
+  if (manualMode) {
+    // 🔥 MODO MANUAL: usa variáveis de ambiente (útil para manutenção)
+    const siteMode = process.env.STATUS_SITE_MODE || 'operational';
+    const supportMode = process.env.STATUS_SUPPORT_MODE || 'operational';
+    const apiMode = process.env.STATUS_API_MODE || 'operational';
+    
+    services = [
+      { id: 'site', name: 'Site principal', status: siteMode, responseTimeMs: null, checked: true, detail: siteMode === 'operational' ? 'Site disponível.' : 'Modo manual ativado.' },
+      { id: 'support', name: 'Central de suporte', status: supportMode, responseTimeMs: null, checked: true, detail: supportMode === 'operational' ? 'Central disponível.' : 'Modo manual ativado.' },
+      { id: 'api', name: 'API de status', status: apiMode, responseTimeMs: null, checked: true, detail: apiMode === 'operational' ? 'API respondendo.' : 'Modo manual ativado.' }
+    ];
+  } else {
+    // 🔥 MODO AUTOMÁTICO: faz ping nos serviços
+    const checkPromises = SERVICES_TO_CHECK.map(service => checkService(service));
+    services = await Promise.all(checkPromises);
+  }
+
+  // ===== CALCULAR OVERALL =====
+  const overall = getOverallStatus(services);
+
+  // ===== MENSAGENS =====
+  const messages = {
+    operational: 'Todos os serviços estão funcionando normalmente. ✅',
+    degraded: '⚠️ Alguns serviços estão com instabilidade.',
+    maintenance: '🔧 Manutenção em andamento.',
+    outage: '🚨 Estamos enfrentando uma interrupção.'
+  };
+
+  // ===== MONTAR PAYLOAD =====
+  const payload = {
+    ok: true,
+    service: 'Aurora Premium',
+    overall,
+    maintenance: overall === 'maintenance',
+    message: process.env.STATUS_MESSAGE || messages[overall] || 'Status atualizado.',
+    updatedAt: new Date().toISOString(),
+    services,
+    incidents: getIncidents(),
+    uptime: getUptimeData(),
+    meta: {
+      totalServices: services.length,
+      operational: services.filter(s => s.status === 'operational').length,
+      degraded: services.filter(s => s.status === 'degraded').length,
+      maintenance: services.filter(s => s.status === 'maintenance').length,
+      outage: services.filter(s => s.status === 'outage').length
+    },
+    timestamps: {
+      utc: new Date().toISOString(),
+      local: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    }
+  };
+
+  // ===== CACHE E CORS =====
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  return res.status(200).json(payload);
 }
