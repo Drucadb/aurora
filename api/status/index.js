@@ -1,8 +1,6 @@
 /**
  * Aurora Premium — Status API com Monitoramento Ativo
  * Rota da Vercel: /api/status
- * 
- * Faz ping nos serviços para detectar se estão online
  */
 
 const VALID_MODES = ['operational', 'degraded', 'maintenance', 'outage'];
@@ -83,7 +81,7 @@ function getUptimeData() {
   }));
 }
 
-// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO =====
+// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO (CORRIGIDA) =====
 async function checkService(service) {
   const start = performance.now();
   
@@ -104,10 +102,8 @@ async function checkService(service) {
     const end = performance.now();
     const responseTime = Math.round(end - start);
     
-    // 🔥 VERIFICA SE A RESPOSTA FOI BEM-SUCEDIDA
-    const isSuccess = response.ok || response.status === 304 || response.status === 302 || response.status === 301;
-    
-    if (isSuccess) {
+    // 🔥 CORREÇÃO: Qualquer erro HTTP = OUTAGE
+    if (response.ok || response.status === 304) {
       return {
         ...service,
         status: 'operational',
@@ -117,18 +113,18 @@ async function checkService(service) {
         lastCheck: new Date().toISOString()
       };
     } else {
+      // 🔥 ERRO HTTP = OUTAGE (vermelho)
       return {
         ...service,
-        status: 'degraded',
+        status: 'outage',
         responseTimeMs: responseTime,
         checked: true,
-        detail: `Resposta HTTP ${response.status} - Serviço pode estar com problemas.`,
+        detail: `🚨 HTTP ${response.status} - Página não encontrada ou erro no servidor.`,
         lastCheck: new Date().toISOString()
       };
     }
     
   } catch (error) {
-    // 🔥 ERRO = SERVIÇO FORA DO AR
     let detail = 'Serviço indisponível.';
     if (error.name === 'AbortError') {
       detail = 'Tempo de resposta excedido (timeout).';
@@ -167,13 +163,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  // ===== VERIFICAR SE DEVE USAR MODO MANUAL =====
   const manualMode = process.env.STATUS_MANUAL_MODE === 'true';
   
   let services;
   
   if (manualMode) {
-    // 🔥 MODO MANUAL: usa variáveis de ambiente (útil para manutenção)
     const siteMode = process.env.STATUS_SITE_MODE || 'operational';
     const supportMode = process.env.STATUS_SUPPORT_MODE || 'operational';
     const apiMode = process.env.STATUS_API_MODE || 'operational';
@@ -184,15 +178,12 @@ export default async function handler(req, res) {
       { id: 'api', name: 'API de status', status: apiMode, responseTimeMs: null, checked: true, detail: apiMode === 'operational' ? 'API respondendo.' : 'Modo manual ativado.' }
     ];
   } else {
-    // 🔥 MODO AUTOMÁTICO: faz ping nos serviços
     const checkPromises = SERVICES_TO_CHECK.map(service => checkService(service));
     services = await Promise.all(checkPromises);
   }
 
-  // ===== CALCULAR OVERALL =====
   const overall = getOverallStatus(services);
 
-  // ===== MENSAGENS =====
   const messages = {
     operational: 'Todos os serviços estão funcionando normalmente. ✅',
     degraded: '⚠️ Alguns serviços estão com instabilidade.',
@@ -200,7 +191,6 @@ export default async function handler(req, res) {
     outage: '🚨 Estamos enfrentando uma interrupção.'
   };
 
-  // ===== MONTAR PAYLOAD =====
   const payload = {
     ok: true,
     service: 'Aurora Premium',
@@ -224,7 +214,6 @@ export default async function handler(req, res) {
     }
   };
 
-  // ===== CACHE E CORS =====
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
