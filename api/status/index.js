@@ -1,5 +1,5 @@
 /**
- * Aurora Premium — Status API
+ * Aurora Premium — Status API com Webhook do Discord
  * Rota da Vercel: /api/status
  *
  * Variáveis na Vercel:
@@ -16,24 +16,29 @@ function readMode(value, fallback = 'operational') {
   return value === 'maintenance' || value === 'operational' ? value : fallback;
 }
 
-// ===== 🔥 ADICIONADO: WEBHOOK DO DISCORD =====
+// ============================================================
+//  WEBHOOK DO DISCORD
+// ============================================================
+
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1537268125496512583/8JPcsQ2ghVN5x5nGyMgSIlbYCYkRJAzKb36OyHCatfL8QA50fMQ2wvI6bC3jP_IInhq1';
 const WEBHOOK_ENABLED = process.env.DISCORD_WEBHOOK_ENABLED !== 'false';
 
-let previousStatus = { overall: 'operational', site: 'operational', support: 'operational' };
+// Guarda o status anterior para não enviar notificações repetidas
+let previousStatus = 'operational';
 
-async function sendDiscordNotification(title, description, color, fields = []) {
+async function sendDiscordNotification(title, description, color) {
   if (!WEBHOOK_ENABLED) return false;
   
   try {
     const payload = {
       embeds: [{
-        title,
-        description,
-        color,
-        fields,
+        title: title,
+        description: description,
+        color: color,
         timestamp: new Date().toISOString(),
-        footer: { text: 'Aurora Premium • Status Monitor' }
+        footer: {
+          text: 'Aurora Premium • Status Monitor'
+        }
       }]
     };
 
@@ -49,7 +54,10 @@ async function sendDiscordNotification(title, description, color, fields = []) {
     return false;
   }
 }
-// ===== FIM DO WEBHOOK =====
+
+// ============================================================
+//  HANDLER PRINCIPAL
+// ============================================================
 
 export default async function handler(req, res) {
   try {
@@ -64,44 +72,30 @@ export default async function handler(req, res) {
     const supportInMaintenance = supportMode === 'maintenance';
     const overall = siteInMaintenance ? 'maintenance' : supportInMaintenance ? 'degraded' : 'operational';
 
-    // ===== 🔥 ADICIONADO: VERIFICAR MUDANÇA DE STATUS =====
-    const currentStatus = {
-      overall: overall,
-      site: siteMode,
-      support: supportMode
-    };
-
-    const hasChanged = JSON.stringify(currentStatus) !== JSON.stringify(previousStatus);
-
-    if (hasChanged && WEBHOOK_ENABLED) {
-      let title = '', description = '', color = 0x5865F2, fields = [];
+    // ===== VERIFICA SE HOUVE MUDANÇA DE STATUS =====
+    if (WEBHOOK_ENABLED && overall !== previousStatus) {
+      let title = '';
+      let description = '';
+      let color = 0x5865F2;
 
       if (overall === 'maintenance') {
-        title = '🔧 Site em Manutenção!';
-        description = 'A Aurora Premium entrou em modo de manutenção.';
-        color = 0x5865F2;
-        fields = [
-          { name: '📌 Status', value: '🔧 Manutenção', inline: true },
-          { name: '🕐 Início', value: new Date().toLocaleString('pt-BR'), inline: true }
-        ];
-      } else if (overall === 'operational' && previousStatus.overall !== 'operational') {
+        title = '🔧 Aurora em Manutenção!';
+        description = 'A Aurora Premium entrou em modo de manutenção. Em breve voltaremos!';
+        color = 0x5865F2; // Roxo
+      } else if (overall === 'operational' && previousStatus === 'maintenance') {
         title = '✅ Serviços Restaurados!';
-        description = 'A Aurora Premium voltou a funcionar normalmente!';
-        color = 0x57F287;
-        fields = [
-          { name: '📌 Status', value: '✅ Online', inline: true },
-          { name: '🕐 Retorno', value: new Date().toLocaleString('pt-BR'), inline: true }
-        ];
+        description = 'A Aurora Premium voltou a funcionar normalmente. Todos os serviços estão online!';
+        color = 0x57F287; // Verde
       }
 
       if (title) {
-        await sendDiscordNotification(title, description, color, fields);
+        await sendDiscordNotification(title, description, color);
       }
 
-      previousStatus = currentStatus;
+      previousStatus = overall;
     }
-    // ===== FIM DA ADIÇÃO =====
 
+    // ===== MONTAR PAYLOAD (MANTIDO IGUAL AO SEU) =====
     const payload = {
       ok: true,
       service: 'Aurora Premium',
