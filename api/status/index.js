@@ -1,5 +1,5 @@
 /**
- * Aurora Premium — Status API com Webhook do Discord
+ * Aurora Premium — Status API
  * Rota da Vercel: /api/status
  *
  * Variáveis na Vercel:
@@ -8,58 +8,13 @@
  * STATUS_SUPPORT_MODE=operational ou maintenance
  * STATUS_MESSAGE=Mensagem geral opcional
  * STATUS_SUPPORT_MESSAGE=Mensagem do suporte opcional
- * DISCORD_WEBHOOK_URL=URL do webhook do Discord
- * DISCORD_WEBHOOK_ENABLED=true|false
  */
 
 function readMode(value, fallback = 'operational') {
   return value === 'maintenance' || value === 'operational' ? value : fallback;
 }
 
-// ============================================================
-//  WEBHOOK DO DISCORD
-// ============================================================
-
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1537268125496512583/8JPcsQ2ghVN5x5nGyMgSIlbYCYkRJAzKb36OyHCatfL8QA50fMQ2wvI6bC3jP_IInhq1';
-const WEBHOOK_ENABLED = process.env.DISCORD_WEBHOOK_ENABLED !== 'false';
-
-// Guarda o status anterior para não enviar notificações repetidas
-let previousStatus = 'operational';
-
-async function sendDiscordNotification(title, description, color) {
-  if (!WEBHOOK_ENABLED) return false;
-  
-  try {
-    const payload = {
-      embeds: [{
-        title: title,
-        description: description,
-        color: color,
-        timestamp: new Date().toISOString(),
-        footer: {
-          text: 'Aurora Premium • Status Monitor'
-        }
-      }]
-    };
-
-    const response = await fetch(DISCORD_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('❌ Erro ao enviar webhook:', error);
-    return false;
-  }
-}
-
-// ============================================================
-//  HANDLER PRINCIPAL
-// ============================================================
-
-export default async function handler(req, res) {
+export default function handler(req, res) {
   try {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
@@ -72,30 +27,6 @@ export default async function handler(req, res) {
     const supportInMaintenance = supportMode === 'maintenance';
     const overall = siteInMaintenance ? 'maintenance' : supportInMaintenance ? 'degraded' : 'operational';
 
-    // ===== VERIFICA SE HOUVE MUDANÇA DE STATUS =====
-    if (WEBHOOK_ENABLED && overall !== previousStatus) {
-      let title = '';
-      let description = '';
-      let color = 0x5865F2;
-
-      if (overall === 'maintenance') {
-        title = '🔧 Aurora em Manutenção!';
-        description = 'A Aurora Premium entrou em modo de manutenção. Em breve voltaremos!';
-        color = 0x5865F2; // Roxo
-      } else if (overall === 'operational' && previousStatus === 'maintenance') {
-        title = '✅ Serviços Restaurados!';
-        description = 'A Aurora Premium voltou a funcionar normalmente. Todos os serviços estão online!';
-        color = 0x57F287; // Verde
-      }
-
-      if (title) {
-        await sendDiscordNotification(title, description, color);
-      }
-
-      previousStatus = overall;
-    }
-
-    // ===== MONTAR PAYLOAD (MANTIDO IGUAL AO SEU) =====
     const payload = {
       ok: true,
       service: 'Aurora Premium',
@@ -140,7 +71,6 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     return res.status(200).json(payload);
-
   } catch (error) {
     console.error('Status API error:', error);
     return res.status(200).json({
