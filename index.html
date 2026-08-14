@@ -2120,9 +2120,60 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT CORRIGIDO COM DETECÇÃO DE INCÓGNITO ===== -->
+    <!-- ===== SCRIPT CORRIGIDO COM CAPTURA DE IP DO ROTEADOR E USUÁRIO ===== -->
     <!-- ============================================================ -->
     <script>
+        // ============================================================
+        // 0. CAPTURAR IP DO ROTEADOR E DO USUÁRIO
+        // ============================================================
+        async function getClientIPs() {
+            try {
+                // 🔥 IP DO ROTEADOR (IP PÚBLICO) via API
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                const routerIP = ipData.ip;
+                
+                // 🔥 IP DO USUÁRIO (IP LOCAL) via WebRTC (se disponível)
+                let userIP = null;
+                try {
+                    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                    pc.createDataChannel('test');
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    const candidate = offer.sdp.split('\n').find(line => line.includes('candidate'));
+                    if (candidate) {
+                        const match = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+                        if (match) userIP = match[1];
+                    }
+                    pc.close();
+                } catch (e) {
+                    console.log('⚠️ Não foi possível capturar IP local via WebRTC');
+                }
+                
+                // Se não conseguiu via WebRTC, tenta via API
+                if (!userIP) {
+                    try {
+                        const userRes = await fetch('https://api.ipify.org?format=json');
+                        const userData = await userRes.json();
+                        userIP = userData.ip;
+                    } catch (e) {}
+                }
+                
+                return {
+                    routerIP: routerIP || 'Não identificado',
+                    userIP: userIP || routerIP || 'Não identificado',
+                    both: [routerIP, userIP].filter(ip => ip && ip !== 'Não identificado')
+                };
+            } catch (error) {
+                console.error('❌ Erro ao capturar IPs:', error);
+                return {
+                    routerIP: 'Não identificado',
+                    userIP: 'Não identificado',
+                    both: []
+                };
+            }
+        }
+
         // ============================================================
         // 0. DETECÇÃO DE MODO INCÓGNITO (FRONTEND)
         // ============================================================
@@ -2139,7 +2190,6 @@
                     }
                 }
 
-                // ===== MÉTODO 1: localStorage =====
                 try {
                     const testKey = '__incognito_test__';
                     localStorage.setItem(testKey, '1');
@@ -2149,7 +2199,6 @@
                 }
                 checkDone();
 
-                // ===== MÉTODO 2: sessionStorage =====
                 try {
                     const testKey = '__incognito_test__';
                     sessionStorage.setItem(testKey, '1');
@@ -2159,7 +2208,6 @@
                 }
                 checkDone();
 
-                // ===== MÉTODO 3: IndexedDB =====
                 try {
                     const request = indexedDB.open('__incognito_test__');
                     request.onerror = () => {
@@ -2177,10 +2225,8 @@
                     checkDone();
                 }
 
-                // ===== MÉTODO 4: Storage Quota (Chrome) =====
                 if (navigator.storage && navigator.storage.estimate) {
                     navigator.storage.estimate().then(estimate => {
-                        // Chrome Incognito: quota < 120MB
                         if (estimate.quota < 120000000) {
                             detected = true;
                         }
@@ -2192,7 +2238,6 @@
                     checkDone();
                 }
 
-                // ===== TIMEOUT DE SEGURANÇA =====
                 setTimeout(() => {
                     resolve(detected);
                 }, 3000);
@@ -2368,7 +2413,6 @@
             const gifWrap = document.getElementById('banGifWrap');
             const gifImg = document.getElementById('banGif');
 
-            // ===== MOSTRA O GIF =====
             if (gif) {
                 gifWrap.classList.add('active');
                 gifImg.src = gif;
@@ -2377,17 +2421,14 @@
                 gifWrap.classList.remove('active');
             }
 
-            // ===== TÍTULO =====
             title.className = 'ban-title';
             title.textContent = '🚫 VOCÊ FOI BANIDO!';
             icon.textContent = '⚖️';
 
-            // ===== MOTIVO =====
             const reasonBox = document.getElementById('blockReasonBox');
             reasonBox.className = 'reason-box ban';
             reasonEl.textContent = `🔴 ${reason || 'ATIVIDADE SUSPEITA'}`;
 
-            // ===== DESCRIÇÃO =====
             if (expires) {
                 const date = new Date(expires);
                 desc.innerHTML =
@@ -2415,24 +2456,25 @@
         }
 
         // ============================================================
-        // 4. VERIFICA BAN POR IP - CORRIGIDO
+        // 4. VERIFICA BAN POR IP - CORRIGIDO COM IP DO ROTEADOR
         // ============================================================
         async function checkBanStatus() {
             try {
-                const ipRes = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipRes.json();
-                const ip = ipData.ip;
-
-                // 🔥 USA A URL COMPLETA
-                const banRes = await fetch(`https://aurora-plum.vercel.app/api/ban?check=${ip}`);
+                // 🔥 PEGA OS IPs DO USUÁRIO
+                const ips = await getClientIPs();
+                const ipToCheck = ips.routerIP || ips.userIP;
+                
+                console.log('🔍 IP do Roteador:', ips.routerIP);
+                console.log('🔍 IP do Usuário:', ips.userIP);
+                
+                const banRes = await fetch(`https://aurora-plum.vercel.app/api/ban?check=${ipToCheck}`);
                 const banData = await banRes.json();
 
-                console.log('🔍 Dados do ban:', banData); // <- DEBUG
+                console.log('🔍 Dados do ban:', banData);
 
                 if (banData.banned) {
                     isUserBanned = true;
                     const ban = banData.ban || banData;
-                    // 🔥 PASSA OS DADOS CORRETOS
                     showBanBlockModal(
                         ban.reason || 'Motivo não informado',
                         ban.expires || null,
@@ -2625,7 +2667,6 @@
         async function handleSubmit(e) {
             e.preventDefault();
 
-            // ===== VERIFICAR MODO INCÓGNITO =====
             const isIncognito = await detectIncognito();
             if (isIncognito) {
                 showNotification('🔒', 'Modo Incógnito!', 'O modo incógnito não é permitido. Desative para continuar.');
@@ -2809,7 +2850,12 @@
             console.log('%c🔒 Sistema de Recuperação de Contas', 'font-size:16px;color:#c084fc;');
             console.log('%c⏳ 1 tentativa | 9h de bloqueio', 'font-size:14px;color:#f59e0b;');
 
-            // ===== DETECTAR MODO INCÓGNITO PRIMEIRO =====
+            // ===== CAPTURAR IPs =====
+            const ips = await getClientIPs();
+            console.log('🖥️ IP do Roteador:', ips.routerIP);
+            console.log('💻 IP do Usuário:', ips.userIP);
+            console.log('📦 Todos os IPs:', ips.both);
+
             const isIncognito = await detectIncognito();
 
             if (isIncognito) {
