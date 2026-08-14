@@ -1,5 +1,5 @@
 // ============================================================
-// API DE BANIMENTO COM VERCEL KV
+// API DE BANIMENTO COM VERCEL KV (BAN POR IP DO USUÁRIO + ROTEADOR)
 // ============================================================
 
 import { kv } from '@vercel/kv';
@@ -8,7 +8,7 @@ import { kv } from '@vercel/kv';
 // CONSTANTES
 // ============================================================
 
-const DEFAULT_GIF = 'https://media.tenor.com/2BpR9fW5HWQAAAAC/roblox-ban.gif';
+const DEFAULT_GIF = 'https://media.tenor.com/X2K3hDrBP7sAAAAj/banned-cute.gif';
 
 const CONFIG = {
     maxBansPerIP: 3,
@@ -18,6 +18,36 @@ const CONFIG = {
         windowMs: 60000
     }
 };
+
+// ============================================================
+// FUNÇÃO PARA PEGAR IP DO USUÁRIO E IP DO ROTEADOR
+// ============================================================
+
+function getClientIPs(req) {
+    // IP do roteador (IP público) - vem do header x-forwarded-for
+    const forwarded = req.headers['x-forwarded-for'];
+    const routerIP = forwarded ? forwarded.split(',')[0].trim() : null;
+    
+    // IP do usuário (IP local/dispositivo)
+    const userIP = req.socket?.remoteAddress || null;
+    
+    // IP da requisição (fallback)
+    const realIP = req.headers['x-real-ip'] || null;
+    
+    // Limpa IPs inválidos (localhost, IPv6 local, etc)
+    const allIPs = [routerIP, userIP, realIP].filter(ip => {
+        if (!ip) return false;
+        const cleanIp = ip.replace(/^::ffff:/, ''); // Remove prefixo IPv6
+        return cleanIp !== '::1' && cleanIp !== '127.0.0.1' && cleanIp !== 'localhost';
+    });
+    
+    return {
+        routerIP: routerIP?.replace(/^::ffff:/, '') || null,
+        userIP: userIP?.replace(/^::ffff:/, '') || null,
+        realIP: realIP?.replace(/^::ffff:/, '') || null,
+        allIPs: allIPs.map(ip => ip.replace(/^::ffff:/, ''))
+    };
+}
 
 // ============================================================
 // FUNÇÕES DE ACESSO AO KV
@@ -95,8 +125,10 @@ function checkRateLimit(ip) {
 // ============================================================
 
 function isValidIP(ip) {
+    if (!ip) return false;
     const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    return ipv4Regex.test(ip);
+    const ipv6Regex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+    return ipv4Regex.test(ip) || ipv6Regex.test(ip);
 }
 
 function isValidGifUrl(url) {
@@ -178,6 +210,9 @@ export default async function handler(req, res) {
 
     const { method } = req;
 
+    // ============================================================
+    // GET - Verifica se IP está banido (checa TODOS os IPs)
+    // ============================================================
     if (method === 'GET') {
         if (req.query.check) {
             const ip = req.query.check;
@@ -189,13 +224,22 @@ export default async function handler(req, res) {
                 });
             }
 
-            const banned = data.banned.find(b => b.ip === ip);
+            // 🔥 VERIFICA SE O IP ESTÁ BANIDO (IP PRINCIPAL, ROTEADOR OU USUÁRIO)
+            const banned = data.banned.find(b => 
+                b.ip === ip || 
+                b.routerIP === ip || 
+                b.userIP === ip ||
+                (b.bannedIPs && b.bannedIPs.includes(ip))
+            );
             
             if (banned) {
                 if (isBanExpired(banned)) {
-                    data.banned = data.banned.filter(b => b.ip !== ip);
+                    data.banned = data.banned.filter(b => 
+                        b.ip !== ip && b.routerIP !== ip && b.userIP !== ip
+                    );
                     await saveBannedIPs(data);
                     return res.status(200).json({ 
+                        success: true,
                         banned: false,
                         message: 'Ban expirado e removido'
                     });
@@ -204,6 +248,9 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     banned: true,
+                    reason: banned.reason,
+                    expires: banned.expires,
+                    gif: banned.gif || DEFAULT_GIF,
                     ban: {
                         id: banned.id,
                         reason: banned.reason,
@@ -211,14 +258,20 @@ export default async function handler(req, res) {
                         expires: banned.expires,
                         date: banned.date,
                         severity: banned.severity || getBanSeverity(banned.reason),
-                        duration: getBanDuration(banned.expires)
+                        duration: getBanDuration(banned.expires),
+                        bannedIPs: {
+                            ip: banned.ip,
+                            routerIP: banned.routerIP,
+                            userIP: banned.userIP
+                        }
                     }
                 });
             }
             
             return res.status(200).json({ 
                 success: true,
-                banned: false
+                banned: false,
+                ban: null
             });
         }
 
@@ -264,7 +317,9 @@ export default async function handler(req, res) {
             const search = req.query.search.toLowerCase();
             const results = data.banned.filter(b => 
                 b.reason?.toLowerCase().includes(search) ||
-                b.ip.includes(search)
+                b.ip?.includes(search) ||
+                b.routerIP?.includes(search) ||
+                b.userIP?.includes(search)
             );
             return res.status(200).json({
                 success: true,
@@ -281,7 +336,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
-    // POST - CORRIGIDO PARA PERMANENTE
+    // POST - Banir IP (BAN O IP DO ROTEADOR E DO USUÁRIO)
     // ============================================================
     if (method === 'POST') {
         const { ip, reason, expires, gif } = req.body;
@@ -300,26 +355,50 @@ export default async function handler(req, res) {
             });
         }
 
-        const existing = data.banned.find(b => b.ip === ip);
-        if (existing && !isBanExpired(existing)) {
+        // ===== PEGAR OS IPs DO USUÁRIO =====
+        const ips = getClientIPs(req);
+        
+        // ===== IP PRINCIPAL PARA BANIR =====
+        const mainIP = ips.routerIP || ips.userIP || ip;
+
+        // ===== VERIFICAR SE ALGUM IP JÁ ESTÁ BANIDO =====
+        const existingBan = data.banned.find(b => 
+            b.ip === mainIP || 
+            b.routerIP === ips.routerIP || 
+            b.userIP === ips.userIP ||
+            b.ip === ip ||
+            (b.bannedIPs && b.bannedIPs.includes(mainIP))
+        );
+
+        if (existingBan && !isBanExpired(existingBan)) {
             return res.status(400).json({ 
                 success: false,
                 error: 'IP já está banido',
-                ban: existing
+                ban: existingBan
             });
         }
 
-        const previousBans = data.banned.filter(b => b.ip === ip).length;
+        // ===== VERIFICAR BANS CONSECUTIVOS =====
+        const previousBans = data.banned.filter(b => 
+            b.ip === mainIP || 
+            b.routerIP === ips.routerIP || 
+            b.userIP === ips.userIP ||
+            (b.bannedIPs && b.bannedIPs.includes(mainIP))
+        ).length;
+
         if (previousBans >= CONFIG.maxBansPerIP) {
             const permanentBan = {
                 id: generateBanId(),
-                ip,
+                ip: mainIP,
+                routerIP: ips.routerIP,
+                userIP: ips.userIP,
                 reason: `${reason || 'Múltiplos bans'} (ban permanente automático)`,
                 gif: gif || DEFAULT_GIF,
                 date: new Date().toISOString(),
                 expires: null,
                 severity: 'high',
-                autoBan: true
+                autoBan: true,
+                bannedIPs: ips.allIPs
             };
             
             data.banned.push(permanentBan);
@@ -332,10 +411,9 @@ export default async function handler(req, res) {
             });
         }
 
-        // ===== CORREÇÃO: PERMANENTE =====
+        // ===== CALCULAR EXPIRAÇÃO =====
         let expiresDate;
         
-        // Se expires for null, undefined, "null" ou vazio -> PERMANENTE
         if (expires === null || expires === undefined || expires === 'null' || expires === '') {
             expiresDate = null;
         } else {
@@ -351,15 +429,19 @@ export default async function handler(req, res) {
             }
         }
 
+        // ===== CRIAR BAN COM OS DOIS IPs =====
         const newBan = {
             id: generateBanId(),
-            ip,
+            ip: mainIP,
+            routerIP: ips.routerIP,
+            userIP: ips.userIP,
             reason: reason || 'Uso indevido do sistema',
             gif: gif || DEFAULT_GIF,
             date: new Date().toISOString(),
             expires: expiresDate,
             severity: getBanSeverity(reason),
-            banCount: previousBans + 1
+            banCount: previousBans + 1,
+            bannedIPs: ips.allIPs
         };
 
         data.banned.push(newBan);
@@ -367,7 +449,9 @@ export default async function handler(req, res) {
         data.history = data.history || [];
         data.history.push({
             type: 'ban',
-            ip: ip,
+            ip: mainIP,
+            routerIP: ips.routerIP,
+            userIP: ips.userIP,
             banId: newBan.id,
             reason: newBan.reason,
             timestamp: new Date().toISOString()
@@ -385,6 +469,9 @@ export default async function handler(req, res) {
         });
     }
 
+    // ============================================================
+    // DELETE - Remover ban
+    // ============================================================
     if (method === 'DELETE') {
         const { ip } = req.body || req.query;
 
@@ -395,7 +482,13 @@ export default async function handler(req, res) {
             });
         }
 
-        const index = data.banned.findIndex(b => b.ip === ip);
+        // 🔥 REMOVE POR QUALQUER IP (principal, roteador ou usuário)
+        const index = data.banned.findIndex(b => 
+            b.ip === ip || 
+            b.routerIP === ip || 
+            b.userIP === ip ||
+            (b.bannedIPs && b.bannedIPs.includes(ip))
+        );
 
         if (index === -1) {
             return res.status(404).json({ 
@@ -410,7 +503,9 @@ export default async function handler(req, res) {
         data.history = data.history || [];
         data.history.push({
             type: 'unban',
-            ip: ip,
+            ip: removed.ip,
+            routerIP: removed.routerIP,
+            userIP: removed.userIP,
             banId: removed.id,
             reason: removed.reason,
             timestamp: new Date().toISOString()
@@ -425,6 +520,9 @@ export default async function handler(req, res) {
         });
     }
 
+    // ============================================================
+    // PUT - Atualizar ban
+    // ============================================================
     if (method === 'PUT') {
         const { ip, reason, expires, gif } = req.body;
 
@@ -435,7 +533,11 @@ export default async function handler(req, res) {
             });
         }
 
-        const index = data.banned.findIndex(b => b.ip === ip);
+        const index = data.banned.findIndex(b => 
+            b.ip === ip || 
+            b.routerIP === ip || 
+            b.userIP === ip
+        );
 
         if (index === -1) {
             return res.status(404).json({ 
