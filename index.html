@@ -116,22 +116,6 @@
       animation: reveal .65s cubic-bezier(.16,1,.3,1) both;
     }
 
-    .mascot-wrap {
-      display: grid;
-      width: min(360px, 78vw);
-      height: clamp(150px, 22vw, 205px);
-      margin: -4px auto 8px;
-      place-items: center;
-      animation: float 4s ease-in-out infinite;
-    }
-
-    .mascot-wrap img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      filter: drop-shadow(0 18px 28px rgba(0,0,0,.34));
-    }
 
     .mountain {
       position: absolute;
@@ -386,7 +370,6 @@
       .maintenance-page { min-height: 100svh; padding: 78px 16px 30px; }
       .topbar { height: 62px; padding: 0 16px; }
       .top-link { font-size: 11px; }
-      .mascot-wrap { width: min(310px, 88vw); height: 154px; margin-bottom: 4px; }
       h1 { margin-bottom: 12px; letter-spacing: -1.7px; }
       .description { font-size: 13px; line-height: 1.55; }
       .return-card { margin-top: 18px; padding: 12px; }
@@ -412,10 +395,6 @@
     </header>
 
     <section class="content" aria-labelledby="maintenanceTitle">
-      <div class="mascot-wrap" aria-hidden="true">
-        <img src="aurora-maintenance-mascot-final.png" alt="Mascote da Aurora reparando um servidor">
-      </div>
-
       <div class="label"><i class="fas fa-screwdriver-wrench"></i> Manutenção programada</div>
       <h1 id="maintenanceTitle">Estamos trabalhando<br><span>em algo especial.</span></h1>
       <p class="description">A Aurora está temporariamente indisponível enquanto realizamos algumas melhorias. O site estará de volta em breve.</p>
