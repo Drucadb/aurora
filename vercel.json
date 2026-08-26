@@ -8,6 +8,10 @@
         {
             "src": "*.html",
             "use": "@vercel/static"
+        },
+        {
+            "src": ".well-known/discord",
+            "use": "@vercel/static"
         }
     ],
     "routes": [
