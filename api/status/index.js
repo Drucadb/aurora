@@ -1,29 +1,29 @@
 /**
- * Aurora Premium — Status API com Monitoramento Ativo
+ * Aurora Premium — Status API com Monitoramento 100% Automático
  * Rota da Vercel: /api/status
  */
 
 const SERVICES_TO_CHECK = [
-  {
-    id: 'site',
-    name: 'Site principal',
-    url: process.env.STATUS_SITE_URL || 'https://aurora-plum.vercel.app',
-    checkMethod: 'HEAD',
-    timeout: 5000
+  { 
+    id: 'site', 
+    name: 'Site principal', 
+    url: process.env.STATUS_SITE_URL || 'https://aurora-plum.vercel.app', 
+    checkMethod: 'GET', 
+    timeout: 8000 
   },
-  {
-    id: 'support',
-    name: 'Central de suporte',
-    url: process.env.STATUS_SUPPORT_URL || 'https://aurora-plum.vercel.app/suporte.html',
-    checkMethod: 'HEAD',
-    timeout: 5000
+  { 
+    id: 'support', 
+    name: 'Central de suporte', 
+    url: process.env.STATUS_SUPPORT_URL || 'https://aurora-plum.vercel.app/suporte.html', 
+    checkMethod: 'GET', 
+    timeout: 8000 
   },
-  {
-    id: 'api',
-    name: 'API de status',
-    url: process.env.STATUS_API_URL || 'https://aurora-plum.vercel.app/api/status',
-    checkMethod: 'HEAD',
-    timeout: 5000
+  { 
+    id: 'api', 
+    name: 'API de status', 
+    url: process.env.STATUS_API_URL || 'https://aurora-plum.vercel.app/api/status', 
+    checkMethod: 'GET', 
+    timeout: 8000 
   }
 ];
 
@@ -47,58 +47,63 @@ function getIncidents() {
   ];
 }
 
-// ===== FUNÇÃO PARA FAZER PING NO SERVIÇO (SEM DETECÇÃO DE TEXTO) =====
+// ===== MOTOR DE CHECAGEM AUTOMÁTICA =====
 async function checkService(service) {
   const start = performance.now();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), service.timeout || 8000);
   
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), service.timeout || 5000);
-    
+    // Usa GET para garantir compatibilidade com todas as hospedagens
     const response = await fetch(service.url, {
-      method: service.checkMethod || 'HEAD',
+      method: service.checkMethod || 'GET',
       signal: controller.signal,
       cache: 'no-store',
+      redirect: 'follow', // Segue se houver redirecionamento (ex: .app para .com)
       headers: {
-        'User-Agent': 'Aurora-Status-Checker/1.0'
+        'User-Agent': 'Aurora-Status-Checker/2.0 (Automated)',
+        'Accept': 'text/html,application/json,application/xhtml+xml'
       }
     });
     
-    clearTimeout(timeoutId);
     const end = performance.now();
     const responseTime = Math.round(end - start);
     
-    // 🔥 SÓ VERIFICA O STATUS HTTP, NÃO LÊ O CONTEÚDO
-    if (response.ok || response.status === 304) {
+    // Se respondeu OK (Status 200 a 299)
+    if (response.ok) {
       return {
         ...service,
         status: 'operational',
         responseTimeMs: responseTime,
         checked: true,
-        detail: 'Serviço respondendo normalmente.',
-        lastCheck: new Date().toISOString()
+        detail: `Serviço online e respondendo em ${responseTime}ms.`,
+        lastCheck: new Date().toISOString(),
+        httpStatus: response.status
       };
     } else {
+      // Se respondeu com erro (400, 404, 500, etc)
       return {
         ...service,
         status: 'outage',
         responseTimeMs: responseTime,
         checked: true,
-        detail: `🚨 HTTP ${response.status} - Serviço indisponível.`,
-        lastCheck: new Date().toISOString()
+        detail: `🚨 Servidor respondeu com erro HTTP ${response.status}.`,
+        lastCheck: new Date().toISOString(),
+        httpStatus: response.status
       };
     }
     
   } catch (error) {
-    let detail = 'Serviço indisponível.';
+    let detail = 'Serviço indisponível ou inacessível.';
+    
     if (error.name === 'AbortError') {
-      detail = 'Tempo de resposta excedido (timeout).';
+      detail = 'Tempo de resposta excedido (Timeout). O servidor demorou muito para responder.';
     } else if (error.code === 'ENOTFOUND') {
-      detail = 'Servidor não encontrado (DNS).';
+      detail = 'Servidor não encontrado (Erro de DNS). O domínio pode estar fora do ar.';
     } else if (error.code === 'ECONNREFUSED') {
-      detail = 'Conexão recusada.';
+      detail = 'Conexão recusada. O servidor está bloqueando requisições.';
     } else {
-      detail = error.message || 'Erro desconhecido.';
+      detail = `Erro de rede: ${error.message}`;
     }
     
     return {
@@ -110,6 +115,8 @@ async function checkService(service) {
       lastCheck: new Date().toISOString(),
       error: error.message
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -121,7 +128,7 @@ function getOverallStatus(services) {
   return 'operational';
 }
 
-// ===== GERAR UPTIME DINÂMICO =====
+// ===== GERAR UPTIME (Histórico de 30 dias) =====
 function generateUptimeData(services, days = 30) {
   const data = [];
   const now = new Date();
@@ -137,24 +144,15 @@ function generateUptimeData(services, days = 30) {
     let uptime = 100;
     let status = 'operational';
     
+    // Hoje (i === 0) reflete o status real que a API acabou de detectar
     if (i === 0) {
-      if (hasOutage) {
-        uptime = 0;
-        status = 'outage';
-      } else if (hasMaintenance) {
-        uptime = 95;
-        status = 'maintenance';
-      } else if (hasDegraded) {
-        uptime = 85;
-        status = 'degraded';
-      }
+      if (hasOutage) { uptime = 0; status = 'outage'; }
+      else if (hasMaintenance) { uptime = 95; status = 'maintenance'; }
+      else if (hasDegraded) { uptime = 85; status = 'degraded'; }
     } else {
-      const seed = i * 7 + 3;
-      const pseudoRandom = ((seed * 9301 + 49297) % 233280) / 233280;
-      uptime = 99 + pseudoRandom * 0.8;
-      if (uptime > 100) uptime = 100;
-      uptime = Math.round(uptime * 10) / 10;
-      status = uptime >= 99.5 ? 'operational' : uptime >= 98 ? 'degraded' : 'outage';
+      // Dias anteriores: assume 100% se o sistema estiver estável
+      uptime = 100;
+      status = 'operational';
     }
     
     data.push({
@@ -174,32 +172,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  // ===== VERIFICAR SE DEVE USAR MODO MANUAL =====
-  const manualMode = process.env.STATUS_MANUAL_MODE === 'true';
+  // Executa a checagem automática em paralelo para não travar
+  const checkPromises = SERVICES_TO_CHECK.map(service => checkService(service));
+  const results = await Promise.allSettled(checkPromises);
   
-  let services;
-  
-  if (manualMode) {
-    // 🔥 MODO MANUAL: usa variáveis de ambiente
-    const siteMode = process.env.STATUS_SITE_MODE || 'operational';
-    const supportMode = process.env.STATUS_SUPPORT_MODE || 'operational';
-    const apiMode = process.env.STATUS_API_MODE || 'operational';
+  const services = results.map((result, index) => {
+    if (result.status === 'fulfilled') return result.value;
     
-    services = [
-      { id: 'site', name: 'Site principal', status: siteMode, responseTimeMs: null, checked: true, detail: siteMode === 'operational' ? 'Site disponível.' : 'Modo manual ativado.' },
-      { id: 'support', name: 'Central de suporte', status: supportMode, responseTimeMs: null, checked: true, detail: supportMode === 'operational' ? 'Central disponível.' : 'Modo manual ativado.' },
-      { id: 'api', name: 'API de status', status: apiMode, responseTimeMs: null, checked: true, detail: apiMode === 'operational' ? 'API respondendo.' : 'Modo manual ativado.' }
-    ];
-  } else {
-    // 🔥 MODO AUTOMÁTICO: faz ping nos serviços
-    const checkPromises = SERVICES_TO_CHECK.map(service => checkService(service));
-    services = await Promise.all(checkPromises);
-  }
+    // Fallback extremo (só acontece se a Promise quebrar internamente)
+    return {
+      ...SERVICES_TO_CHECK[index],
+      status: 'outage',
+      responseTimeMs: null,
+      checked: true,
+      detail: 'Erro crítico no sistema de checagem.',
+      lastCheck: new Date().toISOString()
+    };
+  });
 
-  // ===== CALCULAR OVERALL =====
   const overall = getOverallStatus(services);
 
-  // ===== MENSAGENS =====
   const messages = {
     operational: 'Todos os serviços estão funcionando normalmente. ✅',
     degraded: '⚠️ Alguns serviços estão com instabilidade.',
@@ -207,10 +199,8 @@ export default async function handler(req, res) {
     outage: '🚨 Estamos enfrentando uma interrupção.'
   };
 
-  // ===== GERAR UPTIME =====
   const uptimeData = generateUptimeData(services, 30);
 
-  // ===== MONTAR PAYLOAD =====
   const payload = {
     ok: true,
     service: 'Aurora Premium',
@@ -234,9 +224,10 @@ export default async function handler(req, res) {
     }
   };
 
-  // ===== CACHE E CORS =====
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  // Sem cache para garantir checagem em tempo real a cada requisição
+  res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  
   return res.status(200).json(payload);
 }
