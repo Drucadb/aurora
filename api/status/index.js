@@ -1,5 +1,5 @@
 /**
- * Aurora Premium — Status API com Monitoramento 100% Automático
+ * Aurora Premium — Status API com Monitoramento de Conteúdo
  * Rota da Vercel: /api/status
  */
 
@@ -47,19 +47,18 @@ function getIncidents() {
   ];
 }
 
-// ===== MOTOR DE CHECAGEM AUTOMÁTICA =====
+// ===== MOTOR DE CHECAGEM AUTOMÁTICA COM VERIFICAÇÃO DE CONTEÚDO =====
 async function checkService(service) {
   const start = performance.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), service.timeout || 8000);
   
   try {
-    // Usa GET para garantir compatibilidade com todas as hospedagens
     const response = await fetch(service.url, {
       method: service.checkMethod || 'GET',
       signal: controller.signal,
       cache: 'no-store',
-      redirect: 'follow', // Segue se houver redirecionamento (ex: .app para .com)
+      redirect: 'follow',
       headers: {
         'User-Agent': 'Aurora-Status-Checker/2.0 (Automated)',
         'Accept': 'text/html,application/json,application/xhtml+xml'
@@ -69,19 +68,8 @@ async function checkService(service) {
     const end = performance.now();
     const responseTime = Math.round(end - start);
     
-    // Se respondeu OK (Status 200 a 299)
-    if (response.ok) {
-      return {
-        ...service,
-        status: 'operational',
-        responseTimeMs: responseTime,
-        checked: true,
-        detail: `Serviço online e respondendo em ${responseTime}ms.`,
-        lastCheck: new Date().toISOString(),
-        httpStatus: response.status
-      };
-    } else {
-      // Se respondeu com erro (400, 404, 500, etc)
+    // Se o servidor respondeu com erro (404, 500, etc)
+    if (!response.ok) {
       return {
         ...service,
         status: 'outage',
@@ -92,16 +80,60 @@ async function checkService(service) {
         httpStatus: response.status
       };
     }
+
+    // 🔥 LÊ O CONTEÚDO DA PÁGINA PARA VER SE NÃO ESTÁ VAZIA
+    const text = await response.text();
+
+    // A MÁGICA ACONTECE AQUI: 
+    // Se a página estiver vazia, ou se for a API e não tiver a marca "aurora_status_ok", marca como fora do ar.
+    // Para o site principal, ele verifica se tem a palavra "Aurora" (pode ser no título, etc).
+    
+    let isHealthy = true;
+
+    if (service.id === 'api') {
+      // A API precisa retornar um JSON válido com a marca "aurora_status_ok"
+      try {
+        const json = JSON.parse(text);
+        if (!json.ok || json.service !== 'Aurora Premium') isHealthy = false;
+      } catch {
+        isHealthy = false;
+      }
+    } else {
+      // O site e o suporte precisam ter o título ou a tag "Aurora" no HTML
+      if (!text.includes('Aurora') && !text.includes('aurora')) {
+        isHealthy = false;
+      }
+    }
+
+    if (isHealthy) {
+      return {
+        ...service,
+        status: 'operational',
+        responseTimeMs: responseTime,
+        checked: true,
+        detail: `Serviço online, conteúdo verificado e respondendo em ${responseTime}ms.`,
+        lastCheck: new Date().toISOString(),
+        httpStatus: response.status
+      };
+    } else {
+      return {
+        ...service,
+        status: 'outage',
+        responseTimeMs: responseTime,
+        checked: true,
+        detail: `🚨 Servidor online (HTTP 200), mas o conteúdo da página está vazio ou corrompido.`,
+        lastCheck: new Date().toISOString(),
+        httpStatus: response.status
+      };
+    }
     
   } catch (error) {
     let detail = 'Serviço indisponível ou inacessível.';
     
     if (error.name === 'AbortError') {
-      detail = 'Tempo de resposta excedido (Timeout). O servidor demorou muito para responder.';
+      detail = 'Tempo de resposta excedido (Timeout). O servidor demorou muito.';
     } else if (error.code === 'ENOTFOUND') {
       detail = 'Servidor não encontrado (Erro de DNS). O domínio pode estar fora do ar.';
-    } else if (error.code === 'ECONNREFUSED') {
-      detail = 'Conexão recusada. O servidor está bloqueando requisições.';
     } else {
       detail = `Erro de rede: ${error.message}`;
     }
@@ -132,10 +164,8 @@ function getOverallStatus(services) {
 function generateUptimeData(services, days = 30) {
   const data = [];
   const now = new Date();
-  
   const hasOutage = services.some(s => s.status === 'outage');
   const hasMaintenance = services.some(s => s.status === 'maintenance');
-  const hasDegraded = services.some(s => s.status === 'degraded');
   
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(now);
@@ -144,24 +174,16 @@ function generateUptimeData(services, days = 30) {
     let uptime = 100;
     let status = 'operational';
     
-    // Hoje (i === 0) reflete o status real que a API acabou de detectar
     if (i === 0) {
       if (hasOutage) { uptime = 0; status = 'outage'; }
       else if (hasMaintenance) { uptime = 95; status = 'maintenance'; }
-      else if (hasDegraded) { uptime = 85; status = 'degraded'; }
     } else {
-      // Dias anteriores: assume 100% se o sistema estiver estável
       uptime = 100;
       status = 'operational';
     }
     
-    data.push({
-      date: date.toISOString().split('T')[0],
-      uptime: uptime,
-      status: status
-    });
+    data.push({ date: date.toISOString().split('T')[0], uptime: uptime, status: status });
   }
-  
   return data;
 }
 
@@ -172,14 +194,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  // Executa a checagem automática em paralelo para não travar
   const checkPromises = SERVICES_TO_CHECK.map(service => checkService(service));
   const results = await Promise.allSettled(checkPromises);
   
   const services = results.map((result, index) => {
     if (result.status === 'fulfilled') return result.value;
-    
-    // Fallback extremo (só acontece se a Promise quebrar internamente)
     return {
       ...SERVICES_TO_CHECK[index],
       status: 'outage',
@@ -224,7 +243,6 @@ export default async function handler(req, res) {
     }
   };
 
-  // Sem cache para garantir checagem em tempo real a cada requisição
   res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
